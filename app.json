@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "corrida-app",
+  "name": "Rivvo",
     "slug": "corrida-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+  "icon": "./assets/images/logo.png",
     "scheme": "corridaapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

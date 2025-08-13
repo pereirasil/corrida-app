@@ -34,6 +34,7 @@ export default {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#2c3e50'
       },
+      package: 'com.rivvo.app',
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',
@@ -67,15 +68,14 @@ export default {
         'expo-notifications',
         {
           icon: './assets/images/notification-icon.png',
-          color: '#2c3e50',
-          sounds: ['./assets/sounds/notification.wav']
+          color: '#2c3e50'
         }
       ]
     ],
     extra: {
       eas: {
-        projectId: 'your-project-id-here'
+        projectId: '04fdaa5f-cdf6-4dd2-8937-6bea4ac12ed1'
       }
-    }
+    },
   }
 }; 
