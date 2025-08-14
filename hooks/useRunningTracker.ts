@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform } from 'react-native';
-import { useResourceManager, RESOURCE_PRIORITIES } from './useResourceManager';
+import { RESOURCE_PRIORITIES, useResourceManager } from './useResourceManager';
 
 export interface RunningMetrics {
   distance: number;
@@ -387,13 +387,28 @@ export const useRunningTracker = () => {
     const accuracy = location.coords.accuracy || 999;
     const quality = getGpsQuality(accuracy);
     
+    // Calcular velocidade se disponível
+    let speed = 0;
+    if (lastLocationRef.current && location.timestamp) {
+      const timeDiff = (location.timestamp - lastLocationRef.current.timestamp) / 1000;
+      if (timeDiff > 0) {
+        const distance = calculateDistance(
+          lastLocationRef.current.latitude,
+          lastLocationRef.current.longitude,
+          location.coords.latitude,
+          location.coords.longitude
+        );
+        speed = distance / timeDiff; // m/s
+      }
+    }
+    
     return {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
       timestamp: location.timestamp,
       accuracy,
       altitude: location.coords.altitude || undefined,
-      speed: location.coords.speed || undefined,
+      speed: speed > 0 ? speed * 3.6 : undefined, // Converter para km/h
       heading: location.coords.heading || undefined,
       quality,
     };

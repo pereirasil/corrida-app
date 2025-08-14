@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Dimensions,
-  TextInput,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRunningTracker } from '../../hooks/useRunningTracker';
-import { useMusicSync } from '../../hooks/useMusicSync';
-import { useThemeColor } from '../../hooks/useThemeColor';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
+import {
+    Alert,
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { LeafletMap } from '../../components/LeafletMap';
 import { Colors } from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
+import { useMusicSync } from '../../hooks/useMusicSync';
+import { useRunningTracker } from '../../hooks/useRunningTracker';
 
 const { width } = Dimensions.get('window');
 
@@ -267,7 +266,7 @@ export default function CorridaScreen() {
               onPress={retryGps}
             >
               <Text style={styles.retryButtonText}>Tentar Novamente</Text>
-            </TouchableOpacity>
+        </TouchableOpacity>
           </View>
         )}
         
@@ -292,15 +291,17 @@ export default function CorridaScreen() {
                longitude: currentLocation.coords.longitude,
                accuracy: currentLocation.coords.accuracy || 100,
                quality: getGpsQuality(currentLocation.coords.accuracy || 100),
+               speed: currentMetrics ? currentMetrics.speed : 0,
              } : null}
              route={getCurrentRoute().map(point => ({
                latitude: point.latitude,
                longitude: point.longitude,
                accuracy: point.accuracy,
                quality: point.quality,
+               speed: point.speed || 0,
              }))}
              isRunning={isRunning}
-             onMapReady={() => console.log('Mapa Leaflet carregado!')}
+             onMapReady={() => console.log('Mapa Leaflet Inteligente carregado!')}
            />
         </View>
 

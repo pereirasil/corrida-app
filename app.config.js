@@ -1,106 +1,151 @@
 export default {
   expo: {
-    name: 'Corrida App',
-    slug: 'corrida-app',
-    version: '1.0.0',
-    orientation: 'portrait',
-    icon: './assets/images/icon.png',
-    userInterfaceStyle: 'automatic',
+    name: "Corrida App",
+    slug: "corrida-app",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "automatic",
     splash: {
-      image: './assets/images/splash-icon.png',
-      resizeMode: 'contain',
-      backgroundColor: '#F26522' // Nova cor laranja principal
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#F26522"
     },
     assetBundlePatterns: [
-      '**/*'
+      "**/*"
     ],
     ios: {
       supportsTablet: true,
+      bundleIdentifier: "com.corridaapp.ios",
+      buildNumber: "1.0.0",
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: 'Este app precisa de acesso à localização para rastrear suas corridas com GPS de alta precisão e mostrar sua posição no mapa.',
-        NSLocationAlwaysAndWhenInUseUsageDescription: 'Este app precisa de acesso à localização para rastrear suas corridas em segundo plano com precisão máxima.',
-        NSLocationAlwaysUsageDescription: 'Este app precisa de acesso à localização para rastrear suas corridas em segundo plano com GPS de alta precisão.',
-        NSMicrophoneUsageDescription: 'Este app precisa de acesso ao microfone para comandos de voz durante a corrida.',
-        NSAppleMusicUsageDescription: 'Este app precisa de acesso à biblioteca de música para sincronizar playlists.',
-        UIBackgroundModes: [
-          'location',
-          'audio',
-          'background-fetch'
-        ]
+        NSLocationWhenInUseUsageDescription: "Este app precisa de acesso à localização para rastrear suas corridas com alta precisão GPS.",
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Este app precisa de acesso à localização em segundo plano para continuar rastreando durante a corrida.",
+        NSLocationAlwaysUsageDescription: "Este app precisa de acesso à localização em segundo plano para continuar rastreando durante a corrida.",
+        UIBackgroundModes: ["location", "background-processing"],
+        NSLocationAccuracyBestForNavigation: true,
+        NSLocationAccuracyReduced: false,
+        NSLocationAccuracyBest: true,
+        NSLocationUpdateInterval: 1,
+        NSLocationUpdateDistance: 5,
+        NSLocationUpdateAccuracy: 10
       }
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/images/adaptive-icon.png',
-        backgroundColor: '#F26522' // Nova cor laranja principal
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#F26522"
       },
+      package: "com.corridaapp.android",
+      versionCode: 1,
       permissions: [
-        'ACCESS_FINE_LOCATION',
-        'ACCESS_COARSE_LOCATION',
-        'ACCESS_BACKGROUND_LOCATION',
-        'RECORD_AUDIO',
-        'READ_EXTERNAL_STORAGE',
-        'WRITE_EXTERNAL_STORAGE',
-        'WAKE_LOCK',
-        'VIBRATE',
-        'FOREGROUND_SERVICE',
-        'FOREGROUND_SERVICE_LOCATION'
-      ]
+        "ACCESS_LOCATION_EXTRA_COMMANDS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "SYSTEM_ALERT_WINDOW",
+        "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN"
+      ],
+      usesCleartextTraffic: true,
+      allowBackup: true,
+      foregroundServiceType: ["location"],
+      locationAccuracy: "high",
+      locationUpdateInterval: 1000,
+      locationUpdateDistance: 5,
+      locationUpdateAccuracy: 10
     },
     web: {
-      favicon: './assets/images/favicon.png',
-      themeColor: '#F26522' // Nova cor laranja principal para web
+      favicon: "./assets/favicon.png",
+      bundler: "webpack",
+      output: "export",
+      build: {
+        babel: {
+          include: ["@expo/vector-icons"]
+        }
+      },
+      pwa: {
+        name: "Corrida App",
+        shortName: "Corrida",
+        description: "App de corrida com GPS inteligente e detecção de ciclovias",
+        startUrl: "/",
+        display: "standalone",
+        backgroundColor: "#F26522",
+        themeColor: "#F26522",
+        orientation: "portrait",
+        scope: "/",
+        lang: "pt-BR",
+        categories: ["sports", "health", "fitness"],
+        icons: [
+          {
+            src: "./assets/icon.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable"
+          },
+          {
+            src: "./assets/icon.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable"
+          }
+        ],
+        screenshots: [
+          {
+            src: "./assets/splash.png",
+            sizes: "1280x720",
+            type: "image/png",
+            formFactor: "wide"
+          }
+        ]
+      }
     },
     plugins: [
       [
-        'expo-location',
+        "expo-location",
         {
-          locationAlwaysAndWhenInUsePermission: 'Este app precisa de acesso à localização para rastrear suas corridas com GPS de alta precisão.',
-          locationAlwaysPermission: 'Este app precisa de acesso à localização para rastrear suas corridas em segundo plano com precisão máxima.',
-          locationWhenInUsePermission: 'Este app precisa de acesso à localização para rastrear suas corridas com GPS de alta precisão.',
-          locationAccuracy: 'BestForNavigation',
-          locationUpdateInterval: 500,
-          locationUpdateDistance: 2,
-          locationUpdateAccuracy: 3,
-          // Configurações específicas para alta precisão
+          locationAccuracy: "high",
+          locationUpdateInterval: 1000,
+          locationUpdateDistance: 5,
           isBackgroundLocationEnabled: true,
           isLocationEnabled: true,
           isNetworkProviderEnabled: true,
           isGpsProviderEnabled: true,
-          // Configurações de precisão
-          accuracy: 'BestForNavigation',
-          timeInterval: 500,
-          distanceInterval: 2,
-          maxAccuracy: 10,
-          minAccuracy: 3,
-          // Configurações de filtros
+          accuracy: "high",
+          timeInterval: 1000,
+          distanceInterval: 5,
+          maxAccuracy: 20,
+          minAccuracy: 5,
           enableHighAccuracy: true,
-          forceRequestLocation: true,
+          forceRequestLocation: false,
           showLocationIndicator: true,
-          // Configurações de segundo plano
           backgroundLocationIndicator: true,
-          backgroundLocationIndicatorColor: '#F26522',
-          backgroundLocationIndicatorText: 'Rastreando corrida com GPS de alta precisão',
+          backgroundLocationIndicatorColor: "#F26522",
+          backgroundLocationIndicatorText: "Corrida App está rastreando sua localização"
         }
       ],
       [
-        'expo-av',
+        "expo-notifications",
         {
-          microphonePermission: 'Este app precisa de acesso ao microfone para comandos de voz durante a corrida.'
-        }
-      ],
-      [
-        'expo-notifications',
-        {
-          icon: './assets/images/notification-icon.png',
-          color: '#F26522', // Nova cor laranja principal
-          sounds: ['./assets/sounds/notification.wav']
+          icon: "./assets/notification-icon.png",
+          color: "#F26522",
+          sounds: ["./assets/notification-sound.wav"]
         }
       ]
     ],
     extra: {
       eas: {
-        projectId: 'your-project-id-here'
+        projectId: "your-project-id-here"
       }
     }
   }
