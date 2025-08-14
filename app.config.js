@@ -9,7 +9,7 @@ export default {
     splash: {
       image: './assets/images/splash-icon.png',
       resizeMode: 'contain',
-      backgroundColor: '#2c3e50'
+      backgroundColor: '#F26522' // Nova cor laranja principal
     },
     assetBundlePatterns: [
       '**/*'
@@ -32,7 +32,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
-        backgroundColor: '#2c3e50'
+        backgroundColor: '#F26522' // Nova cor laranja principal
       },
       permissions: [
         'ACCESS_FINE_LOCATION',
@@ -46,7 +46,8 @@ export default {
       ]
     },
     web: {
-      favicon: './assets/images/favicon.png'
+      favicon: './assets/images/favicon.png',
+      themeColor: '#F26522' // Nova cor laranja principal para web
     },
     plugins: [
       [
@@ -67,7 +68,7 @@ export default {
         'expo-notifications',
         {
           icon: './assets/images/notification-icon.png',
-          color: '#2c3e50',
+          color: '#F26522', // Nova cor laranja principal
           sounds: ['./assets/sounds/notification.wav']
         }
       ]

@@ -2,7 +2,9 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -15,7 +17,10 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    Dimensions,
 } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 export default function CadastroScreen() {
   const [formData, setFormData] = useState({
@@ -30,6 +35,7 @@ export default function CadastroScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
   const { register } = useAuth();
 
   const updateFormData = (field: string, value: string) => {
