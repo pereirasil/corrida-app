@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
+import { useResourceManager, RESOURCE_PRIORITIES } from './useResourceManager';
 
 export interface RunningMetrics {
   distance: number;
@@ -48,24 +49,47 @@ export const useRunningTracker = () => {
   const [locationPermission, setLocationPermission] = useState<Location.PermissionStatus | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
   const [gpsStatus, setGpsStatus] = useState<'searching' | 'acquired' | 'lost'>('searching');
+  const [gpsError, setGpsError] = useState<string>('');
   
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastLocationRef = useRef<LocationPoint | null>(null);
   const accuracyBuffer = useRef<number[]>([]);
+  const stepsRef = useRef<number>(0);
+  const lastDistanceRef = useRef<number>(0);
+  const stepCountIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const gpsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Gerenciador de recursos para evitar conflitos
+  const resourceManager = useResourceManager();
+  const gpsResourceId = useRef<string>('gps-tracking-' + Date.now());
 
   // Configurações de GPS de alta precisão
   const GPS_CONFIG = {
-    accuracy: Location.Accuracy.BestForNavigation, // Máxima precisão
-    timeInterval: 500, // Atualizar a cada 500ms para maior frequência
-    distanceInterval: 2, // Atualizar a cada 2 metros para maior precisão
-    maxAccuracy: 10, // Máximo 10 metros de erro
-    minAccuracy: 3, // Mínimo 3 metros de erro (ideal)
+    accuracy: Location.Accuracy.Balanced, // Mudado para Balanced para melhor compatibilidade
+    timeInterval: 1000, // Atualizar a cada 1 segundo
+    distanceInterval: 5, // Atualizar a cada 5 metros
+    maxAccuracy: 20, // Máximo 20 metros de erro (mais permissivo)
+    minAccuracy: 5, // Mínimo 5 metros de erro
     qualityThresholds: {
-      excellent: 5, // < 5m = excelente
-      good: 10,     // < 10m = bom
-      fair: 20,     // < 20m = razoável
-      poor: 20      // >= 20m = ruim
+      excellent: 10, // < 10m = excelente
+      good: 20,      // < 20m = bom
+      fair: 50,      // < 50m = razoável
+      poor: 50       // >= 50m = ruim
+    },
+    timeout: 30000, // 30 segundos para timeout do GPS
+  };
+
+  // Configurações para contagem de passos
+  const STEP_CONFIG = {
+    baseStepLength: 0.75, // metros por passo (média para corrida)
+    minStepDistance: 0.3, // distância mínima para considerar um passo
+    maxStepDistance: 1.2, // distância máxima para considerar um passo
+    speedFactors: {
+      walking: { min: 0, max: 2, stepLength: 0.6 },
+      jogging: { min: 2, max: 5, stepLength: 0.7 },
+      running: { min: 5, max: 8, stepLength: 0.8 },
+      sprinting: { min: 8, max: 15, stepLength: 0.9 },
     }
   };
 
@@ -79,51 +103,240 @@ export const useRunningTracker = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      if (stepCountIntervalRef.current) {
+        clearInterval(stepCountIntervalRef.current);
+      }
+      if (gpsTimeoutRef.current) {
+        clearTimeout(gpsTimeoutRef.current);
+      }
     };
   }, []);
 
   const requestLocationPermission = async () => {
     try {
-      // Solicitar permissões de localização em primeiro plano e segundo plano
+      console.log('Solicitando permissões de localização...');
+      
+      // Solicitar permissões de localização
       const foregroundStatus = await Location.requestForegroundPermissionsAsync();
-      const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
+      console.log('Status permissão foreground:', foregroundStatus.status);
       
       setLocationPermission(foregroundStatus.status);
       
       if (foregroundStatus.status === 'granted') {
+        console.log('Permissão concedida, verificando serviços...');
+        
         // Verificar se os serviços de localização estão habilitados
         const isLocationEnabled = await Location.hasServicesEnabledAsync();
+        console.log('Serviços de localização habilitados:', isLocationEnabled);
         
         if (!isLocationEnabled) {
+          setGpsError('Serviços de localização desabilitados');
           Alert.alert(
             'Serviços de Localização Desabilitados',
-            'Por favor, habilite os serviços de localização nas configurações do seu dispositivo para usar o GPS de alta precisão.',
+            'Por favor, habilite os serviços de localização nas configurações do seu dispositivo para usar o GPS.',
             [
               { text: 'Cancelar', style: 'cancel' },
-              { text: 'Configurações', onPress: () => Location.openSettings() }
+              { text: 'Configurações', onPress: () => {
+                // Abrir configurações do dispositivo
+                if (Platform.OS === 'ios') {
+                  // Para iOS, não há método direto, mas podemos mostrar instruções
+                  Alert.alert(
+                    'Habilitar Localização',
+                    'Vá em Configurações > Privacidade > Localização e habilite para este app.'
+                  );
+                }
+              }},
             ]
           );
           return;
         }
         
-        // Obter localização atual com alta precisão
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: GPS_CONFIG.accuracy,
-          timeInterval: 1000,
-          distanceInterval: 1,
+        // Tentar obter localização atual
+        await getCurrentLocation();
+        
+      } else {
+        setGpsError('Permissão de localização negada');
+        console.log('Permissão negada:', foregroundStatus.status);
+      }
+    } catch (error) {
+      console.error('Erro ao solicitar permissão de localização:', error);
+      setGpsError('Erro ao solicitar permissão');
+      Alert.alert('Erro', 'Não foi possível acessar a localização');
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    try {
+      console.log('Obtendo localização atual...');
+      setGpsStatus('searching');
+      setGpsError('');
+      
+      // Configurar timeout para GPS
+      gpsTimeoutRef.current = setTimeout(() => {
+        if (gpsStatus === 'searching') {
+          console.log('Timeout do GPS - usando localização padrão');
+          setGpsError('GPS lento - usando localização padrão');
+          setGpsStatus('acquired');
+          
+          // Usar localização padrão (São Paulo)
+          const defaultLocation: Location.LocationObject = {
+            coords: {
+              latitude: -23.5505,
+              longitude: -46.6333,
+              accuracy: 100,
+              altitude: 760,
+              speed: 0,
+              heading: 0,
+              altitudeAccuracy: 10,
+            },
+            timestamp: Date.now(),
+          };
+          
+          setCurrentLocation(defaultLocation);
+          setGpsStatus('acquired');
+        }
+      }, GPS_CONFIG.timeout);
+
+      // Tentar obter localização com diferentes configurações
+      let location: Location.LocationObject | null = null;
+      
+      try {
+        // Primeira tentativa: alta precisão
+        location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: 5000,
+          distanceInterval: 10,
+        });
+        console.log('Localização obtida com alta precisão');
+      } catch (error) {
+        console.log('Falha na alta precisão, tentando precisão média...');
+        
+        try {
+          // Segunda tentativa: precisão média
+          location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 10000,
+            distanceInterval: 20,
+          });
+          console.log('Localização obtida com precisão média');
+        } catch (error2) {
+          console.log('Falha na precisão média, tentando precisão baixa...');
+          
+          try {
+            // Terceira tentativa: precisão baixa
+            location = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Low,
+              timeInterval: 15000,
+              distanceInterval: 50,
+            });
+            console.log('Localização obtida com precisão baixa');
+          } catch (error3) {
+            console.log('Todas as tentativas falharam, usando localização padrão');
+            throw new Error('GPS não disponível');
+          }
+        }
+      }
+
+      if (location) {
+        console.log('Localização obtida com sucesso:', {
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+          accuracy: location.coords.accuracy
         });
         
         setCurrentLocation(location);
         setGpsStatus('acquired');
+        setGpsError('');
+        
+        // Limpar timeout
+        if (gpsTimeoutRef.current) {
+          clearTimeout(gpsTimeoutRef.current);
+          gpsTimeoutRef.current = null;
+        }
         
         // Inicializar buffer de precisão
         if (location.coords.accuracy) {
           accuracyBuffer.current = [location.coords.accuracy];
         }
       }
+      
     } catch (error) {
-      console.error('Erro ao solicitar permissão de localização:', error);
-      Alert.alert('Erro', 'Não foi possível acessar a localização');
+      console.error('Erro ao obter localização:', error);
+      setGpsError('Erro ao obter localização');
+      
+      // Usar localização padrão como fallback
+      const defaultLocation: Location.LocationObject = {
+        coords: {
+          latitude: -23.5505,
+          longitude: -46.6333,
+          accuracy: 100,
+          altitude: 760,
+          speed: 0,
+          heading: 0,
+          altitudeAccuracy: 10,
+        },
+        timestamp: Date.now(),
+      };
+      
+      setCurrentLocation(defaultLocation);
+      setGpsStatus('acquired');
+    }
+  };
+
+  const calculateStepsFromMovement = (currentDistance: number, speed: number): number => {
+    let stepLength = STEP_CONFIG.baseStepLength;
+    
+    if (speed <= STEP_CONFIG.speedFactors.walking.max) {
+      stepLength = STEP_CONFIG.speedFactors.walking.stepLength;
+    } else if (speed <= STEP_CONFIG.speedFactors.jogging.max) {
+      stepLength = STEP_CONFIG.speedFactors.jogging.stepLength;
+    } else if (speed <= STEP_CONFIG.speedFactors.running.max) {
+      stepLength = STEP_CONFIG.speedFactors.running.stepLength;
+    } else {
+      stepLength = STEP_CONFIG.speedFactors.sprinting.stepLength;
+    }
+
+    const distanceDiff = currentDistance - lastDistanceRef.current;
+    
+    if (distanceDiff >= STEP_CONFIG.minStepDistance && distanceDiff <= STEP_CONFIG.maxStepDistance) {
+      const newSteps = Math.round(distanceDiff / stepLength);
+      stepsRef.current += newSteps;
+    }
+    
+    lastDistanceRef.current = currentDistance;
+    return stepsRef.current;
+  };
+
+  const startStepCounting = () => {
+    stepCountIntervalRef.current = setInterval(() => {
+      if (currentSession && isRunning) {
+        const currentMetrics = currentSession.metrics;
+        const speed = currentMetrics.speed;
+        
+        const newSteps = calculateStepsFromMovement(currentMetrics.distance, speed);
+        
+        setCurrentSession(prev => {
+          if (!prev || !prev.isActive) return prev;
+          
+          return {
+            ...prev,
+            metrics: {
+              ...prev.metrics,
+              steps: newSteps,
+            },
+          };
+        });
+      }
+    }, 1000);
+    
+    console.log('Contagem de passos iniciada');
+  };
+
+  const stopStepCounting = () => {
+    if (stepCountIntervalRef.current) {
+      clearInterval(stepCountIntervalRef.current);
+      stepCountIntervalRef.current = null;
+      console.log('Contagem de passos parada');
     }
   };
 
@@ -147,12 +360,10 @@ export const useRunningTracker = () => {
     const accuracy = newLocation.coords.accuracy || 999;
     const quality = getGpsQuality(accuracy);
 
-    // Filtrar pontos com baixa precisão
     if (quality === 'poor') {
       return null;
     }
 
-    // Aplicar filtro de velocidade para detectar outliers
     if (lastLocationRef.current) {
       const distance = calculateDistance(
         lastLocationRef.current.latitude,
@@ -162,10 +373,9 @@ export const useRunningTracker = () => {
       );
       
       const timeDiff = (newLocation.timestamp - lastLocationRef.current.timestamp) / 1000;
-      const speed = distance / timeDiff; // m/s
+      const speed = distance / timeDiff;
       
-      // Filtrar velocidades impossíveis (> 10 m/s = 36 km/h para corrida)
-      if (speed > 10) {
+      if (speed > 15) { // Aumentado para 15 m/s (54 km/h)
         return null;
       }
     }
@@ -196,42 +406,58 @@ export const useRunningTracker = () => {
     }
 
     try {
-      // Verificar se o GPS está funcionando
-      if (gpsStatus !== 'acquired') {
-        Alert.alert('GPS não disponível', 'Aguardando sinal GPS. Aguarde alguns segundos e tente novamente.');
-        return false;
-      }
-
-      // Verificar se os serviços de localização ainda estão habilitados
-      const isLocationEnabled = await Location.hasServicesEnabledAsync();
-      if (!isLocationEnabled) {
+      // Verificar se podemos ativar o GPS sem conflitos
+      if (!resourceManager.canActivateResource('gps', RESOURCE_PRIORITIES.GPS_TRACKING)) {
         Alert.alert(
-          'Serviços de Localização Desabilitados',
-          'Os serviços de localização foram desabilitados. Por favor, habilite-os nas configurações.',
+          'Recurso em Uso',
+          'Outro recurso está usando o GPS. Aguarde um momento ou pare a música para liberar o recurso.',
           [
             { text: 'Cancelar', style: 'cancel' },
-            { text: 'Configurações', onPress: () => Location.openSettings() }
+            { text: 'Parar Música', onPress: () => {
+              // Aqui você pode chamar uma função para parar a música
+              console.log('Solicitando parada da música para liberar GPS');
+            }}
           ]
         );
         return false;
       }
 
-      // Iniciar rastreamento de localização com alta precisão
+      // Registrar o recurso GPS
+      if (!resourceManager.registerResource(gpsResourceId.current, 'gps', RESOURCE_PRIORITIES.GPS_TRACKING)) {
+        Alert.alert('Erro', 'Não foi possível ativar o GPS devido a conflitos de recursos');
+        return false;
+      }
+
+      // Verificar se temos alguma localização
+      if (!currentLocation) {
+        console.log('Nenhuma localização disponível, tentando obter...');
+        await getCurrentLocation();
+        
+        if (!currentLocation) {
+          Alert.alert('GPS não disponível', 'Não foi possível obter sua localização. Tente novamente.');
+          resourceManager.deactivateResource(gpsResourceId.current);
+          return false;
+        }
+      }
+
+      console.log('Iniciando rastreamento de corrida...');
+      
+      // Iniciar rastreamento de localização
       locationSubscription.current = await Location.watchPositionAsync(
         {
           accuracy: GPS_CONFIG.accuracy,
           timeInterval: GPS_CONFIG.timeInterval,
           distanceInterval: GPS_CONFIG.distanceInterval,
-          showsBackgroundLocationIndicator: true,
         },
         (location) => {
           setCurrentLocation(location);
           
-          // Atualizar status do GPS
           if (location.coords.accuracy && location.coords.accuracy <= GPS_CONFIG.maxAccuracy) {
             setGpsStatus('acquired');
+            setGpsError('');
           } else {
             setGpsStatus('lost');
+            setGpsError('GPS de baixa precisão');
           }
           
           if (currentSession && isRunning) {
@@ -239,6 +465,9 @@ export const useRunningTracker = () => {
           }
         }
       );
+
+      // Iniciar contagem de passos
+      startStepCounting();
 
       // Criar nova sessão
       const newSession: RunningSession = {
@@ -286,10 +515,14 @@ export const useRunningTracker = () => {
         });
       }, 1000);
 
+      console.log('Corrida iniciada com sucesso');
       return true;
     } catch (error) {
       console.error('Erro ao iniciar corrida:', error);
       Alert.alert('Erro', 'Não foi possível iniciar o rastreamento da corrida');
+      
+      // Limpar recursos em caso de erro
+      resourceManager.deactivateResource(gpsResourceId.current);
       return false;
     }
   };
@@ -319,7 +552,6 @@ export const useRunningTracker = () => {
       return prev;
     });
 
-    // Reiniciar timer
     intervalRef.current = setInterval(() => {
       setCurrentSession(prev => {
         if (prev && prev.isActive) {
@@ -347,6 +579,13 @@ export const useRunningTracker = () => {
       intervalRef.current = null;
     }
 
+    if (stepCountIntervalRef.current) {
+      stopStepCounting();
+    }
+
+    // Desativar o recurso GPS
+    resourceManager.deactivateResource(gpsResourceId.current);
+
     setIsRunning(false);
     
     setCurrentSession(prev => {
@@ -362,7 +601,6 @@ export const useRunningTracker = () => {
   };
 
   const updateSessionWithLocation = (location: Location.LocationObject) => {
-    // Aplicar filtros de qualidade
     const smoothedLocation = smoothLocationData(location);
     if (!smoothedLocation) return;
 
@@ -371,7 +609,6 @@ export const useRunningTracker = () => {
 
       const updatedRoute = [...prev.route, smoothedLocation];
       
-      // Calcular nova distância com algoritmo melhorado
       let totalDistance = 0;
       let elevationGain = 0;
       let elevationLoss = 0;
@@ -391,7 +628,6 @@ export const useRunningTracker = () => {
         
         totalDistance += distance;
         
-        // Calcular elevação
         if (prevPoint.altitude && currentPoint.altitude) {
           const elevationDiff = currentPoint.altitude - prevPoint.altitude;
           if (elevationDiff > 0) {
@@ -401,24 +637,22 @@ export const useRunningTracker = () => {
           }
         }
         
-        // Estatísticas de precisão
         totalAccuracy += currentPoint.accuracy;
         if (currentPoint.quality === 'excellent' || currentPoint.quality === 'good') {
           accuratePoints++;
         }
       }
 
-      // Calcular pace e velocidade
       const elapsedTimeHours = prev.metrics.elapsedTime / 3600;
       const pace = elapsedTimeHours > 0 ? (prev.metrics.elapsedTime / 60) / (totalDistance / 1000) : 0;
       const speed = elapsedTimeHours > 0 ? totalDistance / 1000 / elapsedTimeHours : 0;
 
-      // Calcular calorias (estimativa mais precisa)
-      const calories = Math.round(totalDistance * 65 + (elevationGain * 0.1)); // 65 cal/km + bônus de elevação
+      const calories = Math.round(totalDistance * 65 + (elevationGain * 0.1));
 
-      // Determinar qualidade geral do GPS
       const averageAccuracy = totalAccuracy / updatedRoute.length;
       const gpsQuality = getGpsQuality(averageAccuracy);
+
+      const currentSteps = calculateStepsFromMovement(totalDistance, speed);
 
       return {
         ...prev,
@@ -429,6 +663,7 @@ export const useRunningTracker = () => {
           pace: Math.round(pace * 100) / 100,
           speed: Math.round(speed * 100) / 100,
           calories,
+          steps: currentSteps,
           elevation: smoothedLocation.altitude || 0,
           elevationGain: Math.round(elevationGain),
           elevationLoss: Math.round(elevationLoss),
@@ -448,8 +683,7 @@ export const useRunningTracker = () => {
   };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    // Fórmula de Haversine para cálculo preciso de distância
-    const R = 6371e3; // Raio da Terra em metros
+    const R = 6371e3;
     const φ1 = lat1 * Math.PI / 180;
     const φ2 = lat2 * Math.PI / 180;
     const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -460,7 +694,7 @@ export const useRunningTracker = () => {
               Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c; // Distância em metros
+    return R * c;
   };
 
   const getCurrentMetrics = (): RunningMetrics | null => {
@@ -488,12 +722,20 @@ export const useRunningTracker = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const retryGps = async () => {
+    console.log('Tentando reconectar GPS...');
+    setGpsStatus('searching');
+    setGpsError('');
+    await getCurrentLocation();
+  };
+
   return {
     isRunning,
     currentSession,
     locationPermission,
     currentLocation,
     gpsStatus,
+    gpsError,
     startRunning,
     pauseRunning,
     resumeRunning,
@@ -504,5 +746,7 @@ export const useRunningTracker = () => {
     formatTime,
     formatPace,
     requestLocationPermission,
+    retryGps,
+    getGpsQuality,
   };
 }; 

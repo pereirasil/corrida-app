@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
+import { useResourceManager, RESOURCE_PRIORITIES } from './useResourceManager';
 
 export interface MusicTrack {
   id: string;
@@ -41,6 +42,10 @@ export const useMusicSync = (sessionId?: string) => {
   
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const musicControlsRef = useRef<MusicControl | null>(null);
+  
+  // Gerenciador de recursos para evitar conflitos
+  const resourceManager = useResourceManager();
+  const musicResourceId = useRef<string>('music-session-' + Date.now());
 
   // Simulação de sincronização em tempo real
   useEffect(() => {
@@ -60,6 +65,27 @@ export const useMusicSync = (sessionId?: string) => {
 
   const createMusicSession = async (playlist: MusicTrack[]): Promise<string> => {
     try {
+      // Verificar se podemos ativar a música sem conflitos
+      if (!resourceManager.canActivateResource('music', RESOURCE_PRIORITIES.MUSIC_PLAYBACK)) {
+        Alert.alert(
+          'Recurso em Uso',
+          'O GPS está ativo para corrida. Pare a corrida primeiro para usar a música.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Parar Corrida', onPress: () => {
+              console.log('Solicitando parada da corrida para liberar recursos de áudio');
+            }}
+          ]
+        );
+        return '';
+      }
+
+      // Registrar o recurso de música
+      if (!resourceManager.registerResource(musicResourceId.current, 'music', RESOURCE_PRIORITIES.MUSIC_PLAYBACK)) {
+        Alert.alert('Erro', 'Não foi possível ativar a música devido a conflitos de recursos');
+        return '';
+      }
+
       const sessionId = Date.now().toString();
       const newSession: MusicSession = {
         id: sessionId,
@@ -85,6 +111,9 @@ export const useMusicSync = (sessionId?: string) => {
     } catch (error) {
       console.error('Erro ao criar sessão de música:', error);
       Alert.alert('Erro', 'Não foi possível criar a sessão de música');
+      
+      // Limpar recursos em caso de erro
+      resourceManager.deactivateResource(musicResourceId.current);
       return '';
     }
   };
@@ -132,6 +161,9 @@ export const useMusicSync = (sessionId?: string) => {
     if (syncIntervalRef.current) {
       clearInterval(syncIntervalRef.current);
     }
+
+    // Desativar o recurso de música
+    resourceManager.deactivateResource(musicResourceId.current);
 
     setCurrentSession(null);
     setIsHost(false);

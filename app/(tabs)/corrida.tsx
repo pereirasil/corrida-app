@@ -1,21 +1,22 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-    Alert,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Dimensions,
+  TextInput,
 } from 'react-native';
-import MapView, { Circle, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useRunningTracker } from '../../hooks/useRunningTracker';
+import { useMusicSync } from '../../hooks/useMusicSync';
+import { useThemeColor } from '../../hooks/useThemeColor';
+import { LeafletMap } from '../../components/LeafletMap';
 import { Colors } from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
-import { useMusicSync } from '../../hooks/useMusicSync';
-import { useRunningTracker } from '../../hooks/useRunningTracker';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +27,10 @@ export default function CorridaScreen() {
   const {
     isRunning,
     currentSession,
+    locationPermission,
+    currentLocation,
+    gpsStatus,
+    gpsError,
     startRunning,
     pauseRunning,
     resumeRunning,
@@ -33,9 +38,10 @@ export default function CorridaScreen() {
     getCurrentMetrics,
     getCurrentRoute,
     getGpsStats,
+    getGpsQuality,
+    retryGps,
     formatTime,
     formatPace,
-    gpsStatus,
   } = useRunningTracker();
 
   const {
@@ -202,7 +208,7 @@ export default function CorridaScreen() {
   const getGpsStatusText = () => {
     switch (gpsStatus) {
       case 'acquired': return 'GPS Ativo';
-      case 'searching': return 'Buscando GPS';
+      case 'searching': return 'Buscando GPS...';
       case 'lost': return 'GPS Perdido';
       default: return 'GPS Desconhecido';
     }
@@ -251,6 +257,20 @@ export default function CorridaScreen() {
           </Text>
         </View>
         
+        {gpsError && (
+          <View style={styles.gpsErrorContainer}>
+            <Text style={[styles.gpsErrorText, { color: colors.error }]}>
+              ⚠️ {gpsError}
+            </Text>
+            <TouchableOpacity
+              style={[styles.retryButton, { backgroundColor: colors.primary }]}
+              onPress={retryGps}
+            >
+              <Text style={styles.retryButtonText}>Tentar Novamente</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
         {gpsStats && (
           <View style={styles.gpsStats}>
             <Text style={[styles.gpsStat, { color: colors.textLight }]}>
@@ -264,55 +284,24 @@ export default function CorridaScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Mapa com alta precisão */}
+        {/* Mapa */}
         <View style={styles.mapContainer}>
-          <MapView
-            provider={PROVIDER_GOOGLE}
-            style={styles.map}
-            initialRegion={{
-              latitude: -23.5505,
-              longitude: -46.6333,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-            showsCompass={true}
-            showsScale={true}
-            showsTraffic={false}
-            showsBuildings={true}
-            mapType="standard"
-            userLocationPriority="high"
-            userLocationUpdateInterval={500}
-            userLocationFastestInterval={500}
-          >
-            {/* Rota percorrida */}
-            {routeCoordinates.length > 1 && (
-              <Polyline
-                coordinates={routeCoordinates}
-                strokeColor={colors.primary}
-                strokeWidth={4}
-                strokeColors={[colors.primary, colors.primaryLight, colors.accent]}
-                lineDashPattern={[0]}
-                zIndex={1}
-              />
-            )}
-            
-            {/* Indicador de precisão atual */}
-            {currentMetrics && currentMetrics.accuracy > 0 && (
-              <Circle
-                center={{
-                  latitude: routeCoordinates[routeCoordinates.length - 1]?.latitude || -23.5505,
-                  longitude: routeCoordinates[routeCoordinates.length - 1]?.longitude || -46.6333,
-                }}
-                radius={currentMetrics.accuracy}
-                strokeColor={getGpsQualityColor(currentMetrics.gpsQuality)}
-                strokeWidth={2}
-                fillColor={`${getGpsQualityColor(currentMetrics.gpsQuality)}20`}
-                zIndex={2}
-              />
-            )}
-          </MapView>
+                     <LeafletMap
+             currentLocation={currentLocation ? {
+               latitude: currentLocation.coords.latitude,
+               longitude: currentLocation.coords.longitude,
+               accuracy: currentLocation.coords.accuracy || 100,
+               quality: getGpsQuality(currentLocation.coords.accuracy || 100),
+             } : null}
+             route={getCurrentRoute().map(point => ({
+               latitude: point.latitude,
+               longitude: point.longitude,
+               accuracy: point.accuracy,
+               quality: point.quality,
+             }))}
+             isRunning={isRunning}
+             onMapReady={() => console.log('Mapa Leaflet carregado!')}
+           />
         </View>
 
         {/* Métricas principais */}
@@ -748,15 +737,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   mapContainer: {
-    height: 250,
-    margin: 20,
+    height: 300,
+    marginVertical: 16,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#E5E7EB', // Changed from colors.border to a neutral color for LeafletMap
   },
   map: {
     flex: 1,
@@ -1172,6 +1158,26 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  gpsErrorContainer: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  gpsErrorText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  retryButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '600',
   },
 }); 
