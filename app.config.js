@@ -17,9 +17,9 @@ export default {
     ios: {
       supportsTablet: true,
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: 'Este app precisa de acesso à localização para rastrear suas corridas e mostrar sua posição no mapa.',
-        NSLocationAlwaysAndWhenInUseUsageDescription: 'Este app precisa de acesso à localização para rastrear suas corridas em segundo plano.',
-        NSLocationAlwaysUsageDescription: 'Este app precisa de acesso à localização para rastrear suas corridas em segundo plano.',
+        NSLocationWhenInUseUsageDescription: 'Este app precisa de acesso à localização para rastrear suas corridas com GPS de alta precisão e mostrar sua posição no mapa.',
+        NSLocationAlwaysAndWhenInUseUsageDescription: 'Este app precisa de acesso à localização para rastrear suas corridas em segundo plano com precisão máxima.',
+        NSLocationAlwaysUsageDescription: 'Este app precisa de acesso à localização para rastrear suas corridas em segundo plano com GPS de alta precisão.',
         NSMicrophoneUsageDescription: 'Este app precisa de acesso ao microfone para comandos de voz durante a corrida.',
         NSAppleMusicUsageDescription: 'Este app precisa de acesso à biblioteca de música para sincronizar playlists.',
         UIBackgroundModes: [
@@ -42,7 +42,9 @@ export default {
         'READ_EXTERNAL_STORAGE',
         'WRITE_EXTERNAL_STORAGE',
         'WAKE_LOCK',
-        'VIBRATE'
+        'VIBRATE',
+        'FOREGROUND_SERVICE',
+        'FOREGROUND_SERVICE_LOCATION'
       ]
     },
     web: {
@@ -53,9 +55,32 @@ export default {
       [
         'expo-location',
         {
-          locationAlwaysAndWhenInUsePermission: 'Este app precisa de acesso à localização para rastrear suas corridas.',
-          locationAlwaysPermission: 'Este app precisa de acesso à localização para rastrear suas corridas em segundo plano.',
-          locationWhenInUsePermission: 'Este app precisa de acesso à localização para rastrear suas corridas.'
+          locationAlwaysAndWhenInUsePermission: 'Este app precisa de acesso à localização para rastrear suas corridas com GPS de alta precisão.',
+          locationAlwaysPermission: 'Este app precisa de acesso à localização para rastrear suas corridas em segundo plano com precisão máxima.',
+          locationWhenInUsePermission: 'Este app precisa de acesso à localização para rastrear suas corridas com GPS de alta precisão.',
+          locationAccuracy: 'BestForNavigation',
+          locationUpdateInterval: 500,
+          locationUpdateDistance: 2,
+          locationUpdateAccuracy: 3,
+          // Configurações específicas para alta precisão
+          isBackgroundLocationEnabled: true,
+          isLocationEnabled: true,
+          isNetworkProviderEnabled: true,
+          isGpsProviderEnabled: true,
+          // Configurações de precisão
+          accuracy: 'BestForNavigation',
+          timeInterval: 500,
+          distanceInterval: 2,
+          maxAccuracy: 10,
+          minAccuracy: 3,
+          // Configurações de filtros
+          enableHighAccuracy: true,
+          forceRequestLocation: true,
+          showLocationIndicator: true,
+          // Configurações de segundo plano
+          backgroundLocationIndicator: true,
+          backgroundLocationIndicatorColor: '#F26522',
+          backgroundLocationIndicatorText: 'Rastreando corrida com GPS de alta precisão',
         }
       ],
       [
