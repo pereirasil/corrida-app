@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-// import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -71,9 +71,10 @@ export default function PerfilScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header com foto e informações básicas */}
-      <View
-        style={[styles.header, { backgroundColor: colors.tint }]}
+      {/* Header com gradiente laranja */}
+      <LinearGradient
+        colors={[colors.primary, colors.primaryLight]}
+        style={styles.header}
       >
         <View style={styles.profileInfo}>
           <View style={styles.avatarContainer}>
@@ -90,46 +91,46 @@ export default function PerfilScreen() {
             <Text style={styles.profileLevel}>Corredor Nível 3</Text>
           </View>
         </View>
-      </View>
+      </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Estatísticas do mês */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📊 Estatísticas do Mês</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📊 Estatísticas do Mês</Text>
           <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{monthlyStats.totalDistance}</Text>
+            <View style={[styles.statItem, { borderLeftColor: colors.primary }]}>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{monthlyStats.totalDistance}</Text>
               <Text style={styles.statLabel}>km</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{monthlyStats.totalRuns}</Text>
-              <Text style={styles.statLabel}>Corridas</Text>
+            <View style={[styles.statItem, { borderLeftColor: colors.accent }]}>
+              <Text style={[styles.statValue, { color: colors.accent }]}>{monthlyStats.totalRuns}</Text>
+              <Text style={styles.statLabel}>corridas</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{monthlyStats.averagePace}</Text>
+            <View style={[styles.statItem, { borderLeftColor: colors.success }]}>
+              <Text style={[styles.statValue, { color: colors.success }]}>{monthlyStats.averagePace}</Text>
               <Text style={styles.statLabel}>min/km</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{monthlyStats.caloriesBurned}</Text>
-              <Text style={styles.statLabel}>Calorias</Text>
+            <View style={[styles.statItem, { borderLeftColor: colors.warning }]}>
+              <Text style={[styles.statValue, { color: colors.warning }]}>{monthlyStats.caloriesBurned}</Text>
+              <Text style={styles.statLabel}>calorias</Text>
             </View>
           </View>
         </View>
 
         {/* Gráfico semanal */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📈 Progresso Semanal</Text>
-          <View style={styles.chartContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📈 Progresso Semanal</Text>
+          <View style={[styles.chartContainer, { borderColor: colors.border }]}>
             <LineChart
               data={weeklyStats}
-              width={350}
-              height={200}
+              width={300}
+              height={180}
               chartConfig={{
-                backgroundColor: '#ffffff',
-                backgroundGradientFrom: '#ffffff',
-                backgroundGradientTo: '#ffffff',
+                backgroundColor: '#FFFFFF',
+                backgroundGradientFrom: '#FFFFFF',
+                backgroundGradientTo: '#FFFFFF',
                 decimalPlaces: 1,
-                color: (opacity = 1) => `rgba(52, 152, 219, ${opacity})`,
+                color: (opacity = 1) => `rgba(242, 101, 34, ${opacity})`,
                 labelColor: (opacity = 1) => `rgba(44, 62, 80, ${opacity})`,
                 style: {
                   borderRadius: 16,
@@ -137,7 +138,7 @@ export default function PerfilScreen() {
                 propsForDots: {
                   r: '6',
                   strokeWidth: '2',
-                  stroke: '#3498db',
+                  stroke: colors.primary,
                 },
               }}
               bezier
@@ -148,23 +149,25 @@ export default function PerfilScreen() {
 
         {/* Recordes pessoais */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏅 Recordes Pessoais</Text>
-          {Object.entries(monthlyStats.personalBests).map(([distance, time]) => (
-            <View key={distance} style={styles.recordCard}>
-              <Text style={styles.recordDistance}>{distance}</Text>
-              <Text style={styles.recordTime}>{time}</Text>
-            </View>
-          ))}
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>🏆 Recordes Pessoais</Text>
+          <View style={styles.personalBestsContainer}>
+            {Object.entries(monthlyStats.personalBests).map(([distance, time]) => (
+              <View key={distance} style={[styles.personalBestItem, { borderColor: colors.border }]}>
+                <Text style={[styles.personalBestDistance, { color: colors.text }]}>{distance}</Text>
+                <Text style={[styles.personalBestTime, { color: colors.primary }]}>{time}</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Conquistas recentes */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏆 Conquistas Recentes</Text>
-          {recentAchievements.map(achievement => (
-            <View key={achievement.id} style={styles.achievementCard}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>🎖️ Conquistas Recentes</Text>
+          {recentAchievements.map((achievement) => (
+            <View key={achievement.id} style={[styles.achievementItem, { borderColor: colors.border }]}>
               <Text style={styles.achievementIcon}>{achievement.icon}</Text>
               <View style={styles.achievementInfo}>
-                <Text style={styles.achievementTitle}>{achievement.title}</Text>
+                <Text style={[styles.achievementTitle, { color: colors.text }]}>{achievement.title}</Text>
                 <Text style={styles.achievementDescription}>{achievement.description}</Text>
               </View>
             </View>
@@ -173,72 +176,46 @@ export default function PerfilScreen() {
 
         {/* Configurações */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚙️ Configurações</Text>
-          
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Notificações</Text>
-              <Text style={styles.settingDescription}>Receber lembretes de corrida</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>⚙️ Configurações</Text>
+          <View style={[styles.settingsContainer, { borderColor: colors.border }]}>
+            <View style={styles.settingItem}>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Notificações</Text>
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={setNotificationsEnabled}
+                trackColor={{ false: colors.border, true: colors.primaryLight }}
+                thumbColor={notificationsEnabled ? colors.primary : '#f4f3f4'}
+              />
             </View>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
-              trackColor={{ false: '#bdc3c7', true: colors.tint }}
-              thumbColor={notificationsEnabled ? colors.tint : '#f4f3f4'}
-            />
-          </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Localização</Text>
-              <Text style={styles.settingDescription}>Compartilhar localização com amigos</Text>
+            <View style={styles.settingItem}>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Localização</Text>
+              <Switch
+                value={locationEnabled}
+                onValueChange={setLocationEnabled}
+                trackColor={{ false: colors.border, true: colors.primaryLight }}
+                thumbColor={locationEnabled ? colors.primary : '#f4f3f4'}
+              />
             </View>
-            <Switch
-              value={locationEnabled}
-              onValueChange={setLocationEnabled}
-              trackColor={{ false: '#bdc3c7', true: colors.tint }}
-              thumbColor={locationEnabled ? colors.tint : '#f4f3f4'}
-            />
-          </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Sincronização de Música</Text>
-              <Text style={styles.settingDescription}>Sincronizar música com amigos</Text>
+            <View style={styles.settingItem}>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Sincronização de Música</Text>
+              <Switch
+                value={musicSyncEnabled}
+                onValueChange={setMusicSyncEnabled}
+                trackColor={{ false: colors.border, true: colors.primaryLight }}
+                thumbColor={musicSyncEnabled ? colors.primary : '#f4f3f4'}
+              />
             </View>
-            <Switch
-              value={musicSyncEnabled}
-              onValueChange={setMusicSyncEnabled}
-              trackColor={{ false: '#bdc3c7', true: colors.tint }}
-              thumbColor={musicSyncEnabled ? colors.tint : '#f4f3f4'}
-            />
           </View>
         </View>
 
-        {/* Botões de ação */}
+        {/* Botão de logout */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.actionButton} onPress={editProfile}>
-            <Text style={styles.actionButtonText}>Editar Perfil</Text>
+          <TouchableOpacity 
+            style={[styles.logoutButton, { backgroundColor: colors.error }]}
+            onPress={handleLogout}
+          >
+            <Text style={styles.logoutButtonText}>Sair da Conta</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionButton} onPress={() => Alert.alert('Ajuda', 'Central de ajuda e suporte')}>
-            <Text style={styles.actionButtonText}>Ajuda e Suporte</Text>
-          </TouchableOpacity>
-          
-                      <TouchableOpacity style={[styles.actionButton, styles.logoutButton]} onPress={handleLogout}>
-              <Text style={styles.logoutButtonText}>Sair da Conta</Text>
-            </TouchableOpacity>
-
-            {/* Botão de teste - REMOVER DEPOIS */}
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: '#0891b2', marginTop: 16 }]}
-              onPress={() => {
-                console.log('🧪 Teste de logout direto');
-                logout();
-              }}
-            >
-              <Text style={styles.logoutButtonText}>🧪 Teste Logout Direto</Text>
-            </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -260,7 +237,7 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   avatar: {
     width: 100,
@@ -269,8 +246,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   avatarText: {
     color: 'white',
@@ -281,17 +256,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: 'white',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-                borderColor: '#16a34a',
   },
   editAvatarText: {
-    fontSize: 14,
+    fontSize: 16,
   },
   profileDetails: {
     alignItems: 'center',
@@ -300,46 +273,46 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   profileEmail: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 5,
+    marginBottom: 8,
   },
   profileLevel: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.9)',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   content: {
     flex: 1,
+    paddingHorizontal: 20,
   },
   section: {
-    paddingHorizontal: 20,
-    marginBottom: 25,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 15,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: 12,
   },
   statItem: {
-    width: '48%',
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 12,
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    borderLeftWidth: 4,
     alignItems: 'center',
-    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -349,18 +322,19 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 14,
-    color: '#7f8c8d',
+    fontSize: 12,
+    color: '#6B7280',
     textAlign: 'center',
   },
   chartContainer: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -368,13 +342,16 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   chart: {
-    borderRadius: 12,
+    borderRadius: 16,
   },
-  recordCard: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
+  personalBestsContainer: {
+    gap: 12,
+  },
+  personalBestItem: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -384,23 +361,22 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  recordDistance: {
+  personalBestDistance: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
   },
-  recordTime: {
+  personalBestTime: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#27ae60',
   },
-  achievementCard: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
+  achievementItem: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -408,8 +384,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   achievementIcon: {
-    fontSize: 30,
-    marginRight: 15,
+    fontSize: 32,
+    marginRight: 16,
   },
   achievementInfo: {
     flex: 1,
@@ -417,64 +393,48 @@ const styles = StyleSheet.create({
   achievementTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   achievementDescription: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#6B7280',
+  },
+  settingsContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   settingItem: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  settingInfo: {
-    flex: 1,
-  },
-  settingTitle: {
+  settingLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 2,
-  },
-  settingDescription: {
-    fontSize: 14,
-    color: '#7f8c8d',
-  },
-  actionButton: {
-    backgroundColor: 'white',
-    paddingVertical: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
+    fontWeight: '500',
   },
   logoutButton: {
-    backgroundColor: '#e74c3c',
-    marginTop: 10,
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
     color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
   },
 }); 

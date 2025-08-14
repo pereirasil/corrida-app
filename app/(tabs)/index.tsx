@@ -1,7 +1,7 @@
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Image } from 'expo-image';
-// import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
@@ -10,9 +10,10 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header com cor sólida */}
-      <View
-        style={[styles.header, { backgroundColor: colors.tint }]}
+      {/* Header com gradiente laranja */}
+      <LinearGradient
+        colors={[colors.primary, colors.primaryLight]}
+        style={styles.header}
       >
         <View style={styles.headerContent}>
           <Text style={styles.greeting}>Bom dia, Corredor! 🏃‍♂️</Text>
@@ -22,34 +23,34 @@ export default function HomeScreen() {
           source={require('@/assets/images/icon.png')}
           style={styles.headerImage}
         />
-      </View>
+      </LinearGradient>
 
       {/* Estatísticas rápidas */}
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>12.5</Text>
+        <View style={[styles.statCard, { borderLeftColor: colors.primary }]}>
+          <Text style={[styles.statNumber, { color: colors.primary }]}>12.5</Text>
           <Text style={styles.statLabel}>km esta semana</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>3</Text>
+        <View style={[styles.statCard, { borderLeftColor: colors.accent }]}>
+          <Text style={[styles.statNumber, { color: colors.accent }]}>3</Text>
           <Text style={styles.statLabel}>corridas</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>5:23</Text>
+        <View style={[styles.statCard, { borderLeftColor: colors.success }]}>
+          <Text style={[styles.statNumber, { color: colors.success }]}>5:23</Text>
           <Text style={styles.statLabel}>min/km</Text>
         </View>
       </View>
 
       {/* Próxima corrida */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Próxima Corrida</Text>
-        <TouchableOpacity style={styles.nextRunCard}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Próxima Corrida</Text>
+        <TouchableOpacity style={[styles.nextRunCard, { borderColor: colors.border }]}>
           <View style={styles.nextRunInfo}>
-            <Text style={styles.nextRunTitle}>Corrida com João</Text>
+            <Text style={[styles.nextRunTitle, { color: colors.text }]}>Corrida com João</Text>
             <Text style={styles.nextRunTime}>Hoje às 18:00</Text>
             <Text style={styles.nextRunDistance}>5km • Parque da Cidade</Text>
           </View>
-          <View style={styles.nextRunStatus}>
+          <View style={[styles.nextRunStatus, { backgroundColor: colors.success }]}>
             <Text style={styles.statusText}>Confirmado</Text>
           </View>
         </TouchableOpacity>
@@ -57,17 +58,17 @@ export default function HomeScreen() {
 
       {/* Convites pendentes */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Convites Pendentes</Text>
-        <TouchableOpacity style={styles.inviteCard}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Convites Pendentes</Text>
+        <TouchableOpacity style={[styles.inviteCard, { borderColor: colors.border }]}>
           <View style={styles.inviteInfo}>
-            <Text style={styles.inviteTitle}>Maria convidou você</Text>
+            <Text style={[styles.inviteTitle, { color: colors.text }]}>Maria convidou você</Text>
             <Text style={styles.inviteDetails}>Corrida amanhã às 7:00 • 8km</Text>
           </View>
           <View style={styles.inviteActions}>
-            <TouchableOpacity style={[styles.inviteButton, styles.acceptButton]}>
+            <TouchableOpacity style={[styles.inviteButton, styles.acceptButton, { backgroundColor: colors.success }]}>
               <Text style={styles.acceptButtonText}>✓</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.inviteButton, styles.declineButton]}>
+            <TouchableOpacity style={[styles.inviteButton, styles.declineButton, { backgroundColor: colors.error }]}>
               <Text style={styles.declineButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -76,10 +77,10 @@ export default function HomeScreen() {
 
       {/* Atividade recente */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Atividade Recente</Text>
-        <View style={styles.activityCard}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Atividade Recente</Text>
+        <View style={[styles.activityCard, { borderColor: colors.border }]}>
           <View style={styles.activityHeader}>
-            <Text style={styles.activityTitle}>Corrida de ontem</Text>
+            <Text style={[styles.activityTitle, { color: colors.text }]}>Corrida de ontem</Text>
             <Text style={styles.activityTime}>Ontem às 17:30</Text>
           </View>
           <View style={styles.activityStats}>
@@ -98,24 +99,25 @@ const styles = StyleSheet.create({
   },
   header: {
     height: 200,
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingTop: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerContent: {
     flex: 1,
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#FFFFFF',
+    opacity: 0.9,
   },
   headerImage: {
     width: 80,
@@ -124,17 +126,17 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     marginTop: -30,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'white',
-    marginHorizontal: 5,
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginHorizontal: 4,
+    borderRadius: 16,
+    borderLeftWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -144,28 +146,27 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2c3e50',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#7f8c8d',
+    color: '#6B7280',
     textAlign: 'center',
   },
   section: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 15,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
   },
   nextRunCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -180,35 +181,33 @@ const styles = StyleSheet.create({
   },
   nextRunTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2c3e50',
+    fontWeight: 'bold',
     marginBottom: 4,
   },
   nextRunTime: {
     fontSize: 14,
-    color: '#e74c3c',
-    fontWeight: '500',
-    marginBottom: 4,
+    color: '#6B7280',
+    marginBottom: 2,
   },
   nextRunDistance: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#6B7280',
   },
   nextRunStatus: {
-    backgroundColor: '#27ae60',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
   statusText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   inviteCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -223,45 +222,45 @@ const styles = StyleSheet.create({
   },
   inviteTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
+    fontWeight: 'bold',
     marginBottom: 4,
   },
   inviteDetails: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#6B7280',
   },
   inviteActions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   inviteButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   acceptButton: {
-    backgroundColor: '#27ae60',
+    backgroundColor: '#10B981',
   },
   declineButton: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#EF4444',
   },
   acceptButtonText: {
-    color: 'white',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   declineButtonText: {
-    color: 'white',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   activityCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -272,25 +271,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   activityTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
+    fontWeight: 'bold',
   },
   activityTime: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#6B7280',
   },
   activityStats: {
-    backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
   activityStat: {
     fontSize: 14,
-    color: '#2c3e50',
-    textAlign: 'center',
+    color: '#6B7280',
   },
 });

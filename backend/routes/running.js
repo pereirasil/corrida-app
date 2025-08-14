@@ -6,6 +6,321 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 // =====================================================
+// ENVIAR CONVITE PARA CORRIDA EM GRUPO
+// =====================================================
+router.post('/invites', auth, [
+  body('to_user_id').isUUID().withMessage('ID do usuário deve ser um UUID válido'),
+  body('message').optional().trim().isLength({ max: 500 }).withMessage('Mensagem deve ter no máximo 500 caracteres'),
+  body('scheduled_time').optional().isISO8601().withMessage('Data/hora deve ser válida'),
+  body('distance').optional().isFloat({ min: 0.1, max: 100 }).withMessage('Distância deve estar entre 0.1 e 100 km'),
+  body('location_name').optional().trim().isLength({ max: 255 }).withMessage('Nome do local deve ter no máximo 255 caracteres'),
+  body('location_coordinates').optional().isObject().withMessage('Coordenadas devem ser um objeto válido')
+], async (req, res) => {
+  try {
+    // Validar dados de entrada
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: errors.array()
+      });
+    }
+
+    const fromUserId = req.user.userId;
+    const { 
+      to_user_id, 
+      message, 
+      scheduled_time, 
+      distance, 
+      location_name, 
+      location_coordinates 
+    } = req.body;
+
+    // Verificar se não está tentando convidar a si mesmo
+    if (fromUserId === to_user_id) {
+      return res.status(400).json({
+        error: 'Não é possível convidar a si mesmo'
+      });
+    }
+
+    // Verificar se o usuário alvo existe
+    const targetUser = await pool.query(
+      'SELECT id, name, username FROM users WHERE id = $1 AND is_active = true',
+      [to_user_id]
+    );
+
+    if (targetUser.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Usuário não encontrado'
+      });
+    }
+
+    // Verificar se já existe um convite pendente
+    const existingInvite = await pool.query(
+      'SELECT id, status FROM running_invites WHERE from_user_id = $1 AND to_user_id = $2 AND status = $3',
+      [fromUserId, to_user_id, 'pending']
+    );
+
+    if (existingInvite.rows.length > 0) {
+      return res.status(400).json({
+        error: 'Já existe um convite pendente para este usuário'
+      });
+    }
+
+    // Verificar se são amigos (opcional - pode ser configurável)
+    const friendship = await pool.query(
+      'SELECT status FROM friendships WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)',
+      [fromUserId, to_user_id]
+    );
+
+    if (friendship.rows.length === 0 || friendship.rows[0].status !== 'accepted') {
+      return res.status(400).json({
+        error: 'Só é possível convidar amigos para corridas em grupo'
+      });
+    }
+
+    // Criar convite
+    const newInvite = await pool.query(
+      `INSERT INTO running_invites (
+        from_user_id, to_user_id, message, scheduled_time, 
+        distance, location_name, location_coordinates
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, from_user_id, to_user_id, message, scheduled_time, 
+                distance, location_name, location_coordinates, status, created_at`,
+      [fromUserId, to_user_id, message, scheduled_time, distance, location_name, location_coordinates]
+    );
+
+    res.status(201).json({
+      message: 'Convite para corrida enviado com sucesso',
+      invite: newInvite.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Erro ao enviar convite para corrida:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+// =====================================================
+// OBTER CONVITES DE CORRIDA RECEBIDOS
+// =====================================================
+router.get('/invites/received', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { page = 1, limit = 20 } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // Contar total de convites recebidos
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM running_invites WHERE to_user_id = $1 AND status = $2',
+      [userId, 'pending']
+    );
+
+    const totalInvites = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalInvites / limit);
+
+    // Buscar convites recebidos
+    const invites = await pool.query(
+      `SELECT ri.*, 
+              u.name, u.username, u.avatar_url, u.level, u.total_distance, u.total_runs
+       FROM running_invites ri
+       JOIN users u ON ri.from_user_id = u.id
+       WHERE ri.to_user_id = $1 AND ri.status = 'pending'
+       ORDER BY ri.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    res.json({
+      invites: invites.rows,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalInvites,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao obter convites recebidos:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+// =====================================================
+// OBTER CONVITES DE CORRIDA ENVIADOS
+// =====================================================
+router.get('/invites/sent', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { page = 1, limit = 20 } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // Contar total de convites enviados
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM running_invites WHERE from_user_id = $1',
+      [userId]
+    );
+
+    const totalInvites = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalInvites / limit);
+
+    // Buscar convites enviados
+    const invites = await pool.query(
+      `SELECT ri.*, 
+              u.name, u.username, u.avatar_url, u.level, u.total_distance, u.total_runs
+       FROM running_invites ri
+       JOIN users u ON ri.to_user_id = u.id
+       WHERE ri.from_user_id = $1
+       ORDER BY ri.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    res.json({
+      invites: invites.rows,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalInvites,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao obter convites enviados:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+// =====================================================
+// RESPONDER CONVITE DE CORRIDA
+// =====================================================
+router.put('/invites/:inviteId', auth, [
+  body('action').isIn(['accept', 'decline']).withMessage('Ação deve ser "accept" ou "decline"')
+], async (req, res) => {
+  try {
+    // Validar dados de entrada
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: errors.array()
+      });
+    }
+
+    const userId = req.user.userId;
+    const { inviteId } = req.params;
+    const { action } = req.body;
+
+    // Verificar se o convite existe e é para o usuário atual
+    const invite = await pool.query(
+      'SELECT id, from_user_id, to_user_id, status FROM running_invites WHERE id = $1 AND to_user_id = $2 AND status = $3',
+      [inviteId, userId, 'pending']
+    );
+
+    if (invite.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Convite não encontrado'
+      });
+    }
+
+    const inviteData = invite.rows[0];
+    const newStatus = action === 'accept' ? 'accepted' : 'declined';
+
+    // Atualizar status do convite
+    await pool.query(
+      'UPDATE running_invites SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [newStatus, inviteId]
+    );
+
+    // Se aceito, criar sessão de corrida em grupo
+    if (action === 'accept') {
+      // Criar sessão de corrida
+      const newSession = await pool.query(
+        `INSERT INTO running_sessions (
+          user_id, title, description, start_time, is_group_run
+        ) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, true)
+        RETURNING id`,
+        [userId, `Corrida com ${inviteData.from_user_id}`, 'Corrida em grupo aceita via convite']
+      );
+
+      // Adicionar ambos como participantes
+      await pool.query(
+        `INSERT INTO group_run_participants (session_id, user_id, status)
+         VALUES ($1, $2, 'active'), ($1, $3, 'active')`,
+        [newSession.rows[0].id, userId, inviteData.from_user_id]
+      );
+    }
+
+    res.json({
+      message: `Convite ${action === 'accept' ? 'aceito' : 'recusado'} com sucesso`,
+      status: newStatus
+    });
+
+  } catch (error) {
+    console.error('Erro ao responder convite de corrida:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+// =====================================================
+// CANCELAR CONVITE DE CORRIDA
+// =====================================================
+router.delete('/invites/:inviteId', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { inviteId } = req.params;
+
+    // Verificar se o convite existe e foi enviado pelo usuário atual
+    const invite = await pool.query(
+      'SELECT id, from_user_id, status FROM running_invites WHERE id = $1 AND from_user_id = $2',
+      [inviteId, userId]
+    );
+
+    if (invite.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Convite não encontrado'
+      });
+    }
+
+    if (invite.rows[0].status !== 'pending') {
+      return res.status(400).json({
+        error: 'Só é possível cancelar convites pendentes'
+      });
+    }
+
+    // Cancelar convite
+    await pool.query(
+      'UPDATE running_invites SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      ['cancelled', inviteId]
+    );
+
+    res.json({
+      message: 'Convite cancelado com sucesso'
+    });
+
+  } catch (error) {
+    console.error('Erro ao cancelar convite:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+// =====================================================
 // INICIAR NOVA SESSÃO DE CORRIDA
 // =====================================================
 router.post('/sessions', auth, [
