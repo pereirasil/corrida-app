@@ -285,7 +285,7 @@ const htmlContent = `<!DOCTYPE html>
         <p>Sistema inteligente que reconhece automaticamente quando você está em uma ciclovia e marca com cor verde especial no mapa.</p>
       </div>
       
-      <div class="feature-card">
+      <div class="featureCard">
         <h3>📊 Métricas Avançadas</h3>
         <p>Monitore distância, tempo, velocidade, calorias, passos, elevação e precisão GPS. Análise completa da sua performance.</p>
       </div>
@@ -417,7 +417,56 @@ const htmlContent = `<!DOCTYPE html>
 
 fs.writeFileSync('web-build/index.html', htmlContent);
 
-// 6. Criar arquivo de configuração para deploy
+// 6. Criar arquivo _redirects para Netlify
+console.log('🔄 Criando arquivo _redirects para Netlify...');
+const redirectsContent = `# =====================================================
+# NETLIFY REDIRECTS PARA SPA
+# =====================================================
+
+# Redirecionar todas as rotas para index.html (exceto arquivos estáticos)
+/*    /index.html   200
+
+# Redirecionar rotas da API para o backend (se necessário)
+/api/*    https://seu-backend.vercel.app/api/:splat    200
+
+# =====================================================
+# REDIRECTS ESPECÍFICOS
+# =====================================================
+
+# PWA routes
+/manifest.json    /manifest.json    200
+/sw.js           /sw.js            200
+
+# Auth routes
+/login            /index.html       200
+/cadastro         /index.html       200
+
+# App routes
+/corrida          /index.html       200
+/amigos           /index.html       200
+/perfil           /index.html       200
+/explore          /index.html       200
+
+# =====================================================
+# HEADERS (opcional - já configurado no netlify.toml)
+# =====================================================
+
+# Service Worker
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Manifest
+/manifest.json
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: application/manifest+json
+
+# HTML
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate`;
+
+fs.writeFileSync('web-build/_redirects', redirectsContent);
+
+// 7. Criar arquivo de configuração para deploy
 console.log('⚙️ Criando arquivo de configuração...');
 const vercelConfig = {
   "version": 2,
@@ -465,7 +514,7 @@ const vercelConfig = {
 
 fs.writeFileSync('vercel.json', JSON.stringify(vercelConfig, null, 2));
 
-// 7. Criar README para deploy
+// 8. Criar README para deploy
 console.log('📖 Criando README...');
 const readmeContent = `# 🏃‍♂️ Corrida App - PWA
 
