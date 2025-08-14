@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -164,33 +164,7 @@ export default function LoginScreen() {
               </ThemedText>
             </TouchableOpacity>
 
-            {/* Botão de teste - REMOVER DEPOIS */}
-            <TouchableOpacity 
-              style={[styles.loginButton, { backgroundColor: '#0891b2', marginTop: 16 }]}
-              onPress={() => {
-                console.log('🧪 Teste de navegação para /(tabs)');
-                router.replace('/(tabs)');
-              }}
-            >
-              <ThemedText style={styles.loginButtonText}>🧪 Teste Navegação</ThemedText>
-            </TouchableOpacity>
 
-            {/* Botão de teste - Limpar AsyncStorage */}
-            <TouchableOpacity 
-              style={[styles.loginButton, { backgroundColor: '#dc2626', marginTop: 16 }]}
-              onPress={async () => {
-                console.log('🧹 Limpando AsyncStorage...');
-                try {
-                  await AsyncStorage.clear();
-                  console.log('✅ AsyncStorage limpo');
-                  Alert.alert('Sucesso', 'AsyncStorage limpo com sucesso!');
-                } catch (error) {
-                  console.error('❌ Erro ao limpar AsyncStorage:', error);
-                }
-              }}
-            >
-              <ThemedText style={styles.loginButtonText}>🧹 Limpar Storage</ThemedText>
-            </TouchableOpacity>
           </View>
 
           {/* Footer */}

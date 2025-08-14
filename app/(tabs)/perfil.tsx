@@ -229,16 +229,7 @@ export default function PerfilScreen() {
               <Text style={styles.logoutButtonText}>Sair da Conta</Text>
             </TouchableOpacity>
 
-            {/* Botão de teste - REMOVER DEPOIS */}
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: '#0891b2', marginTop: 16 }]}
-              onPress={() => {
-                console.log('🧪 Teste de logout direto');
-                logout();
-              }}
-            >
-              <Text style={styles.logoutButtonText}>🧪 Teste Logout Direto</Text>
-            </TouchableOpacity>
+
         </View>
       </ScrollView>
     </View>
