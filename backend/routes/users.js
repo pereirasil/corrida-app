@@ -6,17 +6,95 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 // =====================================================
-// OBTER PERFIL DO USUÁRIO
+// BUSCAR TODOS OS USUÁRIOS (para adicionar amigos)
+// =====================================================
+router.get('/search', auth, async (req, res) => {
+  try {
+    const currentUserId = req.user.userId;
+    const { search, page = 1, limit = 20 } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // Construir query base para buscar usuários
+    let whereClause = 'WHERE u.is_active = true AND u.id != $1';
+    let queryParams = [currentUserId];
+    let paramCount = 1;
+
+    // Adicionar filtro de pesquisa se fornecido
+    if (search && search.trim().length > 0) {
+      whereClause += ` AND (u.name ILIKE $${paramCount + 1} OR u.username ILIKE $${paramCount + 1})`;
+      queryParams.push(`%${search.trim()}%`);
+      paramCount++;
+    }
+
+    // Contar total de usuários
+    const countQuery = `
+      SELECT COUNT(*) 
+      FROM users u
+      ${whereClause}
+    `;
+    
+    const countResult = await pool.query(countQuery, queryParams);
+    const totalUsers = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    // Buscar usuários com informações de amizade
+    const usersQuery = `
+      SELECT 
+        u.id, u.name, u.username, u.avatar_url, u.level, 
+        u.total_distance, u.total_runs, u.last_login,
+        CASE 
+          WHEN f.status = 'accepted' THEN 'friend'
+          WHEN f.status = 'pending' AND f.user_id = $1 THEN 'invite_sent'
+          WHEN f.status = 'pending' AND f.friend_id = $1 THEN 'invite_received'
+          WHEN f.status = 'blocked' THEN 'blocked'
+          ELSE 'none'
+        END as friendship_status,
+        f.id as friendship_id
+      FROM users u
+      LEFT JOIN friendships f ON (
+        (f.user_id = $1 AND f.friend_id = u.id) OR 
+        (f.friend_id = $1 AND f.user_id = u.id)
+      )
+      ${whereClause}
+      ORDER BY u.name
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
+    `;
+
+    queryParams.push(limit, offset);
+    const users = await pool.query(usersQuery, queryParams);
+
+    res.json({
+      users: users.rows,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalUsers,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+// =====================================================
+// OBTER PERFIL DO USUÁRIO ATUAL
 // =====================================================
 router.get('/profile', auth, async (req, res) => {
   try {
     const userId = req.user.userId;
 
     const user = await pool.query(
-      `SELECT id, email, name, username, avatar_url, bio, birth_date, gender, 
-              weight, height, level, total_distance, total_runs, total_time, 
-              average_pace, calories_burned, join_date, last_login, created_at
-       FROM users WHERE id = $1`,
+      `SELECT id, name, username, email, avatar_url, level, 
+              total_distance, total_runs, total_time, average_pace,
+              created_at, last_login
+       FROM users WHERE id = $1 AND is_active = true`,
       [userId]
     );
 
@@ -42,11 +120,9 @@ router.get('/profile', auth, async (req, res) => {
 // ATUALIZAR PERFIL DO USUÁRIO
 // =====================================================
 router.put('/profile', auth, [
-  body('name').optional().trim().isLength({ min: 2 }).withMessage('Nome deve ter pelo menos 2 caracteres'),
-  body('username').optional().trim().isLength({ min: 3 }).withMessage('Username deve ter pelo menos 3 caracteres'),
-  body('bio').optional().trim().isLength({ max: 500 }).withMessage('Bio deve ter no máximo 500 caracteres'),
-  body('weight').optional().isFloat({ min: 20, max: 300 }).withMessage('Peso deve estar entre 20 e 300 kg'),
-  body('height').optional().isFloat({ min: 100, max: 250 }).withMessage('Altura deve estar entre 100 e 250 cm')
+  body('name').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Nome deve ter entre 2 e 100 caracteres'),
+  body('username').optional().trim().isLength({ min: 3, max: 30 }).withMessage('Username deve ter entre 3 e 30 caracteres'),
+  body('avatar_url').optional().isURL().withMessage('Avatar deve ser uma URL válida')
 ], async (req, res) => {
   try {
     // Validar dados de entrada
@@ -59,16 +135,16 @@ router.put('/profile', auth, [
     }
 
     const userId = req.user.userId;
-    const { name, username, bio, birth_date, gender, weight, height } = req.body;
+    const updateData = req.body;
 
-    // Verificar se username já existe (se fornecido)
-    if (username) {
-      const usernameCheck = await pool.query(
+    // Verificar se username já existe (se estiver sendo alterado)
+    if (updateData.username) {
+      const existingUser = await pool.query(
         'SELECT id FROM users WHERE username = $1 AND id != $2',
-        [username, userId]
+        [updateData.username, userId]
       );
 
-      if (usernameCheck.rows.length > 0) {
+      if (existingUser.rows.length > 0) {
         return res.status(400).json({
           error: 'Username já está em uso'
         });
@@ -80,34 +156,13 @@ router.put('/profile', auth, [
     const updateValues = [];
     let paramCount = 1;
 
-    if (name !== undefined) {
-      updateFields.push(`name = $${paramCount++}`);
-      updateValues.push(name);
-    }
-    if (username !== undefined) {
-      updateFields.push(`username = $${paramCount++}`);
-      updateValues.push(username);
-    }
-    if (bio !== undefined) {
-      updateFields.push(`bio = $${paramCount++}`);
-      updateValues.push(bio);
-    }
-    if (birth_date !== undefined) {
-      updateFields.push(`birth_date = $${paramCount++}`);
-      updateValues.push(birth_date);
-    }
-    if (gender !== undefined) {
-      updateFields.push(`gender = $${paramCount++}`);
-      updateValues.push(gender);
-    }
-    if (weight !== undefined) {
-      updateFields.push(`weight = $${paramCount++}`);
-      updateValues.push(weight);
-    }
-    if (height !== undefined) {
-      updateFields.push(`height = $${paramCount++}`);
-      updateValues.push(height);
-    }
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] !== undefined && updateData[key] !== null) {
+        updateFields.push(`${key} = $${paramCount + 1}`);
+        updateValues.push(updateData[key]);
+        paramCount++;
+      }
+    });
 
     if (updateFields.length === 0) {
       return res.status(400).json({
@@ -116,14 +171,16 @@ router.put('/profile', auth, [
     }
 
     // Adicionar updated_at e userId
-    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+    updateFields.push('updated_at = CURRENT_TIMESTAMP');
     updateValues.push(userId);
 
     const updateQuery = `
       UPDATE users 
       SET ${updateFields.join(', ')}
-      WHERE id = $${paramCount}
-      RETURNING id, name, username, avatar_url, bio, birth_date, gender, weight, height, updated_at
+      WHERE id = $${paramCount + 1}
+      RETURNING id, name, username, email, avatar_url, level, 
+                total_distance, total_runs, total_time, average_pace,
+                created_at, last_login, updated_at
     `;
 
     const updatedUser = await pool.query(updateQuery, updateValues);
@@ -135,6 +192,43 @@ router.put('/profile', auth, [
 
   } catch (error) {
     console.error('Erro ao atualizar perfil:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
+  }
+});
+
+// =====================================================
+// EXCLUIR CONTA DO USUÁRIO
+// =====================================================
+router.delete('/profile', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Verificar se o usuário tem sessões de corrida ativas
+    const activeSessions = await pool.query(
+      'SELECT id FROM running_sessions WHERE user_id = $1 AND end_time IS NULL',
+      [userId]
+    );
+
+    if (activeSessions.rows.length > 0) {
+      return res.status(400).json({
+        error: 'Não é possível excluir a conta com sessões de corrida ativas'
+      });
+    }
+
+    // Desativar usuário (soft delete)
+    await pool.query(
+      'UPDATE users SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [userId]
+    );
+
+    res.json({
+      message: 'Conta excluída com sucesso'
+    });
+
+  } catch (error) {
+    console.error('Erro ao excluir conta:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });
@@ -423,83 +517,6 @@ router.put('/settings', auth, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao atualizar configurações:', error);
-    res.status(500).json({
-      error: 'Erro interno do servidor'
-    });
-  }
-});
-
-// =====================================================
-// BUSCAR USUÁRIOS (para adicionar amigos)
-// =====================================================
-router.get('/search', auth, async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const { q, page = 1, limit = 20 } = req.query;
-
-    if (!q || q.trim().length < 2) {
-      return res.status(400).json({
-        error: 'Termo de busca deve ter pelo menos 2 caracteres'
-      });
-    }
-
-    const searchTerm = `%${q.trim()}%`;
-    const offset = (page - 1) * limit;
-
-    // Buscar usuários (excluindo o usuário atual e já amigos)
-    const users = await pool.query(
-      `SELECT u.id, u.name, u.username, u.avatar_url, u.level, u.total_distance, u.total_runs
-       FROM users u
-       WHERE u.id != $1 
-         AND u.is_active = true
-         AND (u.name ILIKE $2 OR u.username ILIKE $2)
-         AND u.id NOT IN (
-           SELECT CASE 
-             WHEN user_id = $1 THEN friend_id 
-             ELSE user_id 
-           END
-           FROM friendships 
-           WHERE (user_id = $1 OR friend_id = $1)
-         )
-       ORDER BY u.name
-       LIMIT $3 OFFSET $4`,
-      [userId, searchTerm, limit, offset]
-    );
-
-    // Contar total de resultados
-    const countResult = await pool.query(
-      `SELECT COUNT(*) 
-       FROM users u
-       WHERE u.id != $1 
-         AND u.is_active = true
-         AND (u.name ILIKE $2 OR u.username ILIKE $2)
-         AND u.id NOT IN (
-           SELECT CASE 
-             WHEN user_id = $1 THEN friend_id 
-             ELSE user_id 
-           END
-           FROM friendships 
-           WHERE (user_id = $1 OR friend_id = $1)
-         )`,
-      [userId, searchTerm]
-    );
-
-    const totalUsers = parseInt(countResult.rows[0].count);
-    const totalPages = Math.ceil(totalUsers / limit);
-
-    res.json({
-      users: users.rows,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages,
-        totalUsers,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
-    });
-
-  } catch (error) {
-    console.error('Erro na busca de usuários:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });

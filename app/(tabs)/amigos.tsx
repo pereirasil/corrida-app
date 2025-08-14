@@ -38,6 +38,19 @@ interface Invite {
   created_at: string;
 }
 
+interface User {
+  id: string;
+  name: string;
+  username: string;
+  avatar_url?: string;
+  level: number;
+  total_distance: number;
+  total_runs: number;
+  last_login?: string;
+  friendship_status: 'none' | 'friend' | 'invite_sent' | 'invite_received' | 'blocked';
+  friendship_id?: string;
+}
+
 export default function AmigosScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -46,6 +59,12 @@ export default function AmigosScreen() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Estados para o modal de adicionar amigos
+  const [showAddFriendModal, setShowAddFriendModal] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [searchUsersQuery, setSearchUsersQuery] = useState('');
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Mock data - substituir por chamadas reais da API
   useEffect(() => {
@@ -112,6 +131,78 @@ export default function AmigosScreen() {
     ]);
   };
 
+  // Mock de usuários para adicionar como amigos
+  const loadUsers = async (searchTerm = '') => {
+    setLoadingUsers(true);
+    
+    // Simular delay da API
+    setTimeout(() => {
+      const mockUsers: User[] = [
+        {
+          id: '4',
+          name: 'Ana Oliveira',
+          username: 'anaoliveira',
+          level: 18,
+          total_distance: 1800.0,
+          total_runs: 120,
+          last_login: '2024-01-15T08:00:00Z',
+          friendship_status: 'none',
+        },
+        {
+          id: '5',
+          name: 'Carlos Lima',
+          username: 'carloslima',
+          level: 12,
+          total_distance: 890.5,
+          total_runs: 67,
+          last_login: '2024-01-14T20:30:00Z',
+          friendship_status: 'invite_sent',
+        },
+        {
+          id: '6',
+          name: 'Lucia Ferreira',
+          username: 'luciaferreira',
+          level: 25,
+          total_distance: 3200.0,
+          total_runs: 200,
+          last_login: '2024-01-15T12:00:00Z',
+          friendship_status: 'none',
+        },
+        {
+          id: '7',
+          name: 'Roberto Alves',
+          username: 'robertoalves',
+          level: 10,
+          total_distance: 650.0,
+          total_runs: 45,
+          last_login: '2024-01-13T15:30:00Z',
+          friendship_status: 'none',
+        },
+        {
+          id: '8',
+          name: 'Fernanda Costa',
+          username: 'fernandacosta',
+          level: 19,
+          total_distance: 1950.0,
+          total_runs: 130,
+          last_login: '2024-01-15T10:00:00Z',
+          friendship_status: 'invite_received',
+        },
+      ];
+
+      // Filtrar por termo de busca se fornecido
+      const filteredUsers = searchTerm 
+        ? mockUsers.filter(user => 
+            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.username.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : mockUsers;
+
+      setUsers(filteredUsers);
+      setLoadingUsers(false);
+    }, 500);
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     // Aqui você faria a chamada real para a API
@@ -147,6 +238,42 @@ export default function AmigosScreen() {
     }
   };
 
+  const handleAddFriend = (user: User) => {
+    if (user.friendship_status === 'friend') {
+      Alert.alert('Já são amigos', `${user.name} já é seu amigo!`);
+      return;
+    }
+
+    if (user.friendship_status === 'invite_sent') {
+      Alert.alert('Convite já enviado', `Você já enviou um convite para ${user.name}`);
+      return;
+    }
+
+    if (user.friendship_status === 'invite_received') {
+      Alert.alert('Convite pendente', `${user.name} já te enviou um convite. Verifique na aba "Convites"!`);
+      return;
+    }
+
+    Alert.alert(
+      'Adicionar Amigo',
+      `Enviar solicitação de amizade para ${user.name}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Enviar', onPress: () => {
+          // Aqui você faria a chamada real para a API
+          Alert.alert('Solicitação Enviada!', `${user.name} receberá uma notificação.`);
+          
+          // Atualizar status local
+          setUsers(prev => prev.map(u => 
+            u.id === user.id 
+              ? { ...u, friendship_status: 'invite_sent' as const }
+              : u
+          ));
+        }},
+      ]
+    );
+  };
+
   const getStatusColor = (lastLogin: string) => {
     const lastLoginDate = new Date(lastLogin);
     const now = new Date();
@@ -168,6 +295,26 @@ export default function AmigosScreen() {
     return 'Offline';
   };
 
+  const getFriendshipStatusText = (status: string) => {
+    switch (status) {
+      case 'friend': return 'Amigo';
+      case 'invite_sent': return 'Convite Enviado';
+      case 'invite_received': return 'Convite Recebido';
+      case 'blocked': return 'Bloqueado';
+      default: return 'Adicionar';
+    }
+  };
+
+  const getFriendshipStatusColor = (status: string) => {
+    switch (status) {
+      case 'friend': return colors.success;
+      case 'invite_sent': return colors.primary;
+      case 'invite_received': return colors.warning;
+      case 'blocked': return colors.error;
+      default: return colors.primary;
+    }
+  };
+
   const formatDistance = (distance: number) => {
     if (distance >= 1000) {
       return `${(distance / 1000).toFixed(1)}k km`;
@@ -182,6 +329,21 @@ export default function AmigosScreen() {
       month: '2-digit',
       year: 'numeric',
     });
+  };
+
+  const openAddFriendModal = () => {
+    setShowAddFriendModal(true);
+    setSearchUsersQuery('');
+    loadUsers();
+  };
+
+  const searchUsers = (query: string) => {
+    setSearchUsersQuery(query);
+    if (query.trim().length >= 2) {
+      loadUsers(query);
+    } else if (query.trim().length === 0) {
+      loadUsers();
+    }
   };
 
   return (
@@ -299,6 +461,17 @@ export default function AmigosScreen() {
                 </View>
               </View>
             ))}
+            
+            {/* Botão para adicionar mais amigos */}
+            <TouchableOpacity
+              style={[styles.addFriendButton, { borderColor: colors.primary }]}
+              onPress={openAddFriendModal}
+            >
+              <Ionicons name="person-add" size={24} color={colors.primary} />
+              <Text style={[styles.addFriendButtonText, { color: colors.primary }]}>
+                Adicionar Mais Amigos
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           // Lista de Convites Pendentes
@@ -364,6 +537,102 @@ export default function AmigosScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Modal para Adicionar Amigos */}
+      {showAddFriendModal && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Adicionar Amigos
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowAddFriendModal(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Barra de pesquisa */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color={colors.textLight} style={styles.searchIcon} />
+              <TextInput
+                style={[styles.searchInput, { 
+                  borderColor: colors.border,
+                  color: colors.text,
+                  backgroundColor: colors.backgroundLight
+                }]}
+                placeholder="Buscar usuários por nome ou username..."
+                placeholderTextColor={colors.textLight}
+                value={searchUsersQuery}
+                onChangeText={searchUsers}
+              />
+            </View>
+
+            {/* Lista de usuários */}
+            <ScrollView style={styles.modalBody}>
+              {loadingUsers ? (
+                <View style={styles.loadingContainer}>
+                  <Text style={[styles.loadingText, { color: colors.textLight }]}>
+                    Carregando usuários...
+                  </Text>
+                </View>
+              ) : users.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="people" size={48} color={colors.textLight} />
+                  <Text style={[styles.emptyStateText, { color: colors.textLight }]}>
+                    {searchUsersQuery ? 'Nenhum usuário encontrado' : 'Nenhum usuário disponível'}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.usersList}>
+                  {users.map((user) => (
+                    <View key={user.id} style={[styles.userCard, { borderColor: colors.border }]}>
+                      <View style={styles.userInfo}>
+                        <View style={styles.avatarContainer}>
+                          <Text style={styles.avatarText}>
+                            {user.name.charAt(0).toUpperCase()}
+                          </Text>
+      </View>
+
+                        <View style={styles.userDetails}>
+                          <Text style={[styles.userName, { color: colors.text }]}>
+                            {user.name}
+                          </Text>
+                          <Text style={styles.userUsername}>@{user.username}</Text>
+                          
+                          <View style={styles.userStats}>
+                            <Text style={styles.userStat}>
+                              Nível {user.level} • {formatDistance(user.total_distance)}
+                            </Text>
+                            <Text style={styles.userStat}>
+                              {user.total_runs} corridas • {getStatusText(user.last_login || '')}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.addFriendActionButton,
+                          { backgroundColor: getFriendshipStatusColor(user.friendship_status) }
+                        ]}
+                        onPress={() => handleAddFriend(user)}
+                        disabled={user.friendship_status !== 'none'}
+                      >
+                        <Text style={styles.addFriendActionButtonText}>
+                          {getFriendshipStatusText(user.friendship_status)}
+                        </Text>
+      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -574,5 +843,119 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     marginTop: 15,
+  },
+  addFriendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    marginTop: 10,
+    gap: 10,
+  },
+  addFriendButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  modalBody: {
+    padding: 20,
+    maxHeight: 400,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 10,
+  },
+  usersList: {
+    gap: 15,
+  },
+  userCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  userUsername: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  userStats: {
+    gap: 2,
+  },
+  userStat: {
+    fontSize: 12,
+    color: '#888',
+  },
+  addFriendActionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  addFriendActionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 }); 
