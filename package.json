@@ -11,7 +11,11 @@
     "lint": "expo lint",
     "build-web": "node ./scripts/build-web.js",
     "build-netlify": "bash ./netlify-build.sh",
-    "deploy-netlify": "npm run build-netlify && netlify deploy --prod --dir=web-build"
+    "deploy-netlify": "npm run build-netlify && netlify deploy --prod --dir=web-build",
+    "build-vercel": "npm run build-web",
+    "deploy-vercel": "npm run build-vercel && vercel --prod",
+    "vercel-dev": "vercel dev",
+    "deploy-completo": "bash ./scripts/deploy-vercel.sh"
   },
   "dependencies": {
     "@expo/ngrok": "^4.1.3",
