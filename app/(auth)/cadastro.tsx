@@ -1,23 +1,22 @@
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
-    Dimensions,
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -146,8 +145,9 @@ export default function CadastroScreen() {
               >
                 <Ionicons 
                   name="arrow-back" 
-                  size={24} 
+                  size={28} 
                   color={colors.primary} 
+                  style={{top: 35, right: 7}}
                 />
               </TouchableOpacity>
               
@@ -176,153 +176,195 @@ export default function CadastroScreen() {
               {/* Nome Completo */}
               <View style={styles.inputContainer}>
                 <ThemedText style={styles.label}>Nome Completo</ThemedText>
-                <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-                  <Ionicons 
-                    name="person-outline" 
-                    size={20} 
-                    color={colors.primary} 
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="Digite seu nome completo"
-                    placeholderTextColor={colors.textLight}
-                    value={formData.fullName}
-                    onChangeText={(value) => updateFormData('fullName', value)}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                  />
+                <View style={styles.inputGlowContainer}>
+                  <LinearGradient
+                    colors={['#F26522', '#E55A1B', '#D84315']}
+                    style={styles.inputGradientBorder}
+                  >
+                    <View style={styles.inputWrapper}>
+                      <Ionicons 
+                        name="person-outline" 
+                        size={20} 
+                        color={colors.primary} 
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={[styles.input, { color: colors.text }]}
+                        placeholder="Digite seu nome completo"
+                        placeholderTextColor={colors.textLight}
+                        value={formData.fullName}
+                        onChangeText={(value) => updateFormData('fullName', value)}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </LinearGradient>
                 </View>
               </View>
 
               {/* Nome de Usuário */}
               <View style={styles.inputContainer}>
                 <ThemedText style={styles.label}>Nome de Usuário</ThemedText>
-                <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-                  <Ionicons 
-                    name="at-outline" 
-                    size={20} 
-                    color={colors.primary} 
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="Digite um nome de usuário"
-                    placeholderTextColor={colors.textLight}
-                    value={formData.username}
-                    onChangeText={(value) => updateFormData('username', value)}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                <View style={styles.inputGlowContainer}>
+                  <LinearGradient
+                    colors={['#F26522', '#E55A1B', '#D84315']}
+                    style={styles.inputGradientBorder}
+                  >
+                    <View style={styles.inputWrapper}>
+                      <Ionicons 
+                        name="at-outline" 
+                        size={20} 
+                        color={colors.primary} 
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={[styles.input, { color: colors.text }]}
+                        placeholder="Digite um nome de usuário"
+                        placeholderTextColor={colors.textLight}
+                        value={formData.username}
+                        onChangeText={(value) => updateFormData('username', value)}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </LinearGradient>
                 </View>
               </View>
 
               {/* Celular */}
               <View style={styles.inputContainer}>
                 <ThemedText style={styles.label}>Celular</ThemedText>
-                <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-                  <Ionicons 
-                    name="call-outline" 
-                    size={20} 
-                    color={colors.primary} 
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="Digite seu número de celular"
-                    placeholderTextColor={colors.textLight}
-                    value={formData.phone}
-                    onChangeText={(value) => updateFormData('phone', value)}
-                    keyboardType="phone-pad"
-                    autoCorrect={false}
-                  />
+                <View style={styles.inputGlowContainer}>
+                  <LinearGradient
+                    colors={['#F26522', '#E55A1B', '#D84315']}
+                    style={styles.inputGradientBorder}
+                  >
+                    <View style={styles.inputWrapper}>
+                      <Ionicons 
+                        name="call-outline" 
+                        size={20} 
+                        color={colors.primary} 
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={[styles.input, { color: colors.text }]}
+                        placeholder="Digite seu número de celular"
+                        placeholderTextColor={colors.textLight}
+                        value={formData.phone}
+                        onChangeText={(value) => updateFormData('phone', value)}
+                        keyboardType="phone-pad"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </LinearGradient>
                 </View>
               </View>
 
               {/* Email */}
               <View style={styles.inputContainer}>
                 <ThemedText style={styles.label}>Email</ThemedText>
-                <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-                  <Ionicons 
-                    name="mail-outline" 
-                    size={20} 
-                    color={colors.primary} 
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="Digite seu email"
-                    placeholderTextColor={colors.textLight}
-                    value={formData.email}
-                    onChangeText={(value) => updateFormData('email', value)}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                <View style={styles.inputGlowContainer}>
+                  <LinearGradient
+                    colors={['#F26522', '#E55A1B', '#D84315']}
+                    style={styles.inputGradientBorder}
+                  >
+                    <View style={styles.inputWrapper}>
+                      <Ionicons 
+                        name="mail-outline" 
+                        size={20} 
+                        color={colors.primary} 
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={[styles.input, { color: colors.text }]}
+                        placeholder="Digite seu email"
+                        placeholderTextColor={colors.textLight}
+                        value={formData.email}
+                        onChangeText={(value) => updateFormData('email', value)}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </LinearGradient>
                 </View>
               </View>
 
               {/* Senha */}
               <View style={styles.inputContainer}>
                 <ThemedText style={styles.label}>Senha</ThemedText>
-                <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-                  <Ionicons 
-                    name="lock-closed-outline" 
-                    size={20} 
-                    color={colors.primary} 
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="Digite sua senha"
-                    placeholderTextColor={colors.textLight}
-                    value={formData.password}
-                    onChangeText={(value) => updateFormData('password', value)}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
+                <View style={styles.inputGlowContainer}>
+                  <LinearGradient
+                    colors={['#F26522', '#E55A1B', '#D84315']}
+                    style={styles.inputGradientBorder}
                   >
-                    <Ionicons 
-                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color={colors.primary} 
-                    />
-                  </TouchableOpacity>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons 
+                        name="lock-closed-outline" 
+                        size={20} 
+                        color={colors.primary} 
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={[styles.input, { color: colors.text }]}
+                        placeholder="Digite sua senha"
+                        placeholderTextColor={colors.textLight}
+                        value={formData.password}
+                        onChangeText={(value) => updateFormData('password', value)}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowPassword(!showPassword)}
+                        style={styles.eyeIcon}
+                      >
+                        <Ionicons 
+                          name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                          size={20} 
+                          color={colors.primary} 
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </LinearGradient>
                 </View>
               </View>
 
               {/* Confirmar Senha */}
               <View style={styles.inputContainer}>
                 <ThemedText style={styles.label}>Confirmar Senha</ThemedText>
-                <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-                  <Ionicons 
-                    name="lock-closed-outline" 
-                    size={20} 
-                    color={colors.primary} 
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="Confirme sua senha"
-                    placeholderTextColor={colors.textLight}
-                    value={formData.confirmPassword}
-                    onChangeText={(value) => updateFormData('confirmPassword', value)}
-                    secureTextEntry={!showConfirmPassword}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={styles.eyeIcon}
+                <View style={styles.inputGlowContainer}>
+                  <LinearGradient
+                    colors={['#F26522', '#E55A1B', '#D84315']}
+                    style={styles.inputGradientBorder}
                   >
-                    <Ionicons 
-                      name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color={colors.primary} 
-                    />
-                  </TouchableOpacity>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons 
+                        name="lock-closed-outline" 
+                        size={20} 
+                        color={colors.primary} 
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={[styles.input, { color: colors.text }]}
+                        placeholder="Confirme sua senha"
+                        placeholderTextColor={colors.textLight}
+                        value={formData.confirmPassword}
+                        onChangeText={(value) => updateFormData('confirmPassword', value)}
+                        secureTextEntry={!showConfirmPassword}
+                        autoCapitalize="none"
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                        style={styles.eyeIcon}
+                      >
+                        <Ionicons 
+                          name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
+                          size={20} 
+                          color={colors.primary} 
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </LinearGradient>
                 </View>
               </View>
 
@@ -340,8 +382,8 @@ export default function CadastroScreen() {
                   <ThemedText style={styles.cadastroButtonText}>Criando conta...</ThemedText>
                 ) : (
                   <>
-                    <Ionicons name="download" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                    <ThemedText style={styles.cadastroButtonText}>Baixar Agora</ThemedText>
+                    {/* <Ionicons name="download" size={20} color="#FFFFFF" style={styles.buttonIcon} /> */}
+                    <ThemedText style={styles.cadastroButtonText}>Cadastrar</ThemedText>
                   </>
                 )}
               </TouchableOpacity>
@@ -357,18 +399,6 @@ export default function CadastroScreen() {
                   Entrar
                 </ThemedText>
               </TouchableOpacity>
-            </View>
-
-            {/* Estatísticas inspiradas no site */}
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <ThemedText style={[styles.statNumber, { color: colors.primary }]}>50k+</ThemedText>
-                <ThemedText style={styles.statLabel}>Corredores Conectados</ThemedText>
-              </View>
-              <View style={styles.statItem}>
-                <ThemedText style={[styles.statNumber, { color: colors.primary }]}>1M+</ThemedText>
-                <ThemedText style={styles.statLabel}>Quilômetros Percorridos</ThemedText>
-              </View>
             </View>
           </View>
         </ScrollView>
@@ -451,6 +481,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
+    top: 20,
   },
   logoGradient: {
     width: '100%',
@@ -465,6 +496,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
     lineHeight: 30,
+    top: 10,
   },
   subtitle: {
     fontSize: 14,
@@ -472,6 +504,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     color: '#2C3E50',
+    top: 3,
   },
   form: {
     marginBottom: 24,
@@ -479,32 +512,44 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 18,
   },
+  inputGlowContainer: {
+    shadowColor: '#F26522',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+    borderRadius: 18,
+  },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: 4,
     color: '#2C3E50',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 16,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 18,
-    shadowColor: '#000',
+    paddingVertical: 10,
+    borderRadius: 15,
+    margin: 1,
+  },
+  inputGradientBorder: {
+    borderRadius: 16,
+    padding: 1,
+    shadowColor: '#D84315',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 4,
   },
   inputIcon: {
     marginRight: 16,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
   },
   eyeIcon: {
     padding: 4,

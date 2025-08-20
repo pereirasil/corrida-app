@@ -34,7 +34,6 @@ export default {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#2c3e50'
       },
-      package: 'com.rivvo.app',
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',

@@ -1,23 +1,22 @@
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
-    Dimensions,
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -102,7 +101,7 @@ export default function LoginScreen() {
               Corra Junto, Supere Limites
             </ThemedText>
             <ThemedText style={styles.subtitle}>
-              O primeiro app que conecta corredores em tempo real
+              O primeiro aplicativo que conecta corredores em tempo real.
             </ThemedText>
           </View>
 
@@ -111,55 +110,69 @@ export default function LoginScreen() {
             {/* Email */}
             <View style={styles.inputContainer}>
               <ThemedText style={styles.label}>Email</ThemedText>
-              <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-                <Ionicons 
-                  name="mail-outline" 
-                  size={20} 
-                  color={colors.primary} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="Digite seu email"
-                  placeholderTextColor={colors.textLight}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+              <View style={styles.inputGlowContainer}>
+                <LinearGradient
+                  colors={['#F26522', '#E55A1B', '#D84315']}
+                  style={styles.inputGradientBorder}
+                >
+                  <View style={styles.inputWrapper}>
+                    <Ionicons 
+                      name="mail-outline" 
+                      size={20} 
+                      color={colors.primary} 
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={[styles.input, { color: colors.text }]}
+                      placeholder="Digite seu email"
+                      placeholderTextColor={colors.textLight}
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                </LinearGradient>
               </View>
             </View>
 
             {/* Senha */}
             <View style={styles.inputContainer}>
               <ThemedText style={styles.label}>Senha</ThemedText>
-              <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color={colors.primary} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="Digite sua senha"
-                  placeholderTextColor={colors.textLight}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
+              <View style={styles.inputGlowContainer}>
+                <LinearGradient
+                  colors={['#F26522', '#E55A1B', '#D84315']}
+                  style={styles.inputGradientBorder}
                 >
-                  <Ionicons 
-                    name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                    size={20} 
-                    color={colors.primary} 
-                  />
-                </TouchableOpacity>
+                  <View style={styles.inputWrapper}>
+                    <Ionicons 
+                      name="lock-closed-outline" 
+                      size={20} 
+                      color={colors.primary} 
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={[styles.input, { color: colors.text }]}
+                      placeholder="Digite sua senha"
+                      placeholderTextColor={colors.textLight}
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={styles.eyeIcon}
+                    >
+                      <Ionicons 
+                        name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                        size={20} 
+                        color={colors.primary} 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </LinearGradient>
               </View>
             </View>
 
@@ -201,18 +214,6 @@ export default function LoginScreen() {
                 Cadastre-se
               </ThemedText>
             </TouchableOpacity>
-          </View>
-
-          {/* Estatísticas inspiradas no site */}
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <ThemedText style={[styles.statNumber, { color: colors.primary }]}>50k+</ThemedText>
-              <ThemedText style={styles.statLabel}>Corredores Conectados</ThemedText>
-            </View>
-            <View style={styles.statItem}>
-              <ThemedText style={[styles.statNumber, { color: colors.primary }]}>1M+</ThemedText>
-              <ThemedText style={styles.statLabel}>Quilômetros Percorridos</ThemedText>
-            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -273,6 +274,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 48,
+    top: 25,
   },
   logoContainer: {
     width: 100,
@@ -284,6 +286,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
+    bottom: 12,
   },
   logoGradient: {
     width: '100%',
@@ -298,38 +301,52 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: 'center',
     lineHeight: 34,
+    bottom: 12,
   },
   subtitle: {
     fontSize: 16,
     opacity: 0.7,
     textAlign: 'center',
     lineHeight: 22,
+    color: '#2C3E50',
   },
   form: {
-    marginBottom: 32,
+    marginBottom: 3,
   },
   inputContainer: {
     marginBottom: 20,
   },
+  inputGlowContainer: {
+    shadowColor: '#F26522',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+    borderRadius: 18,
+  },
   label: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 4,
     color: '#2C3E50',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 16,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 18,
-    shadowColor: '#000',
+    paddingVertical: 10,
+    borderRadius: 14,
+    margin: 2,
+  },
+  inputGradientBorder: {
+    borderRadius: 16,
+    padding: 0.5,
+    shadowColor: '#D84315',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 4,
   },
   inputIcon: {
     marginRight: 16,
@@ -377,7 +394,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
+    top: 25,
   },
   footerText: {
     fontSize: 14,
