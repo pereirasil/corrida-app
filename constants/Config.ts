@@ -4,7 +4,7 @@ export const APP_CONFIG = {
   API: {
     // Em desenvolvimento, usar IP da máquina para dispositivos móveis
     BASE_URL: __DEV__ 
-      ? 'http://192.168.0.127:3000' 
+      ? 'http://192.168.0.127:3001' 
       : 'https://sua-api-producao.com',
     
     // Timeout das requisições (em ms)
